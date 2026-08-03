@@ -1,4 +1,4 @@
-# General Ideaa
+# General Idea
 This is a basic k8s cluster project setup which is a design of a **production k8s platform** that is going to help me build a whole infrastructure from the scratch and improve in my DevOps skills.
 
 although for now I've planned to implement it localy on VirtualBox machines but It'll grow.
@@ -16,7 +16,7 @@ The project's name is **8-Apex** means k8s at it's highst level of response and 
  - application LoadBalancer
 
 
-### structure
+### Structure
 This is a basic demonstration of cluster schema.<br>
 It contains:
  * 3 load balanced Control-planes
@@ -58,7 +58,7 @@ there is two network interface for each of them:
   - *enp0s3* - a NAT Network interface (just for tests and internet accessibility)
   - *enp0s8* - a host-only interface specified as the **node's main IP address**. 
 
-### cluster Details and tools list
+### Cluster Details And Tools List
 - cluster is created using **kubeadm**
 - CRI is **containerd**
 - CNI is **Cilium**
@@ -98,7 +98,7 @@ there is two network interface for each of them:
 - Velero or etcd snapshots for backup
 
 
-# projects phases
+# Projects Phases
 This is a brief explantion and more a presentaion of how the project is shaped and planned phase by phase. The exact implementaion steps are explained in docs.
 
 ## Phase 1 - Infrastructure 
@@ -138,7 +138,6 @@ This is a brief explantion and more a presentaion of how the project is shaped a
 │ Total Virtual Machines      │ 6        │ Complete Kubernetes infrastructure                          │
 └─────────────────────────────┴──────────┴─────────────────────────────────────────────────────────────┘
 ```
-
 ### Tpology/Schema
 ```
                                      Cluster Administration
