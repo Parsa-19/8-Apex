@@ -215,27 +215,40 @@ CI/CD pipeline with gitOps
 
 
 ## Phase 2 - Install k8s
+bitch
 
 ## Phase 3 - Multi-Namespace Environment
+bitch
 
 ## Phase 4 - Deploy Applications
+bitch
 
 ## Phase 5 - Ingress
+bitch
 
 ## Phase 6 - Persistent Storage
+bitch
 
 ## Phase 7 - Monitoring Stack
+bitch
 
 ## Phase 8 - Logging
+bitch
 
 ## Phase 9 - GitOps / CI-CD
+bitch
 
 ## Phase 10 - Autoscaling
+bitch
 
 ## Phase 11 - Security
+bitch
 
 ## Phase 8 - Backup
+bitch
 
 ## Phase 8 - Disaster Recovery
+bitch
 
 ## Phase 8 - Documentation
+bitch
