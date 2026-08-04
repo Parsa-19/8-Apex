@@ -3,7 +3,7 @@ This is a basic k8s cluster project setup which is a design of a **production k8
 
 although for now I've planned to implement it localy on VirtualBox machines but It'll grow.
 
-> ![NOTE]
+> [!NOTE]
 > This repo contains 2 branches named `tuf` and `sherkat` which is the same basic idea implemented on two device environment labs. for example `tuf` is a branch which I decided to use to develop the project on my laptop device and `sherkat` is another branch dedicated for the PC device in sherkat. 
 
 # project 8-Apex
