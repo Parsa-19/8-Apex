@@ -110,12 +110,13 @@ This is a brief explantion and more a presentaion of how the project is shaped a
 ┌─────────┬──────────────────────────┬────────────────────┬────────────────────────────┬──────┬───────┬─────────┐
 │ VM Name │ Role                     │ NAT (enp0s3)       │ Private (enp0s8)           │ vCPU │ RAM   │ Storage │
 ├─────────┼──────────────────────────┼────────────────────┼────────────────────────────┼──────┼───────┼─────────┤
-│ CP-1    │ Kubernetes Control Plane │ 10.0.2.18          │ 192.168.55.118             │ 2    │ 2 GB  │ 10 GB   │
-│ CP-2    │ Kubernetes Control Plane │ 10.0.2.19          │ 192.168.55.119             │ 2    │ 2 GB  │ 10 GB   │
-│ CP-3    │ Kubernetes Control Plane │ 10.0.2.20          │ 192.168.55.120             │ 2    │ 2 GB  │ 10 GB   │
-│ Node-1  │ Kubernetes Worker        │ 10.0.2.21          │ 192.168.55.121             │ 2    │ 5 GB  │ 25 GB   │
-│ Node-2  │ Kubernetes Worker        │ 10.0.2.22          │ 192.168.55.122             │ 2    │ 5 GB  │ 25 GB   │
-│ App-LB  │ External Load Balancer   │ 10.0.2.23          │ 192.168.55.123             │ 1    │ 1 GB  │ 8 GB    │
+│ CP-1    │ Kubernetes Control Plane │ 10.0.2.18          │ 192.168.16.118             │ 3    │ 2 GB  │ 20 GB   │
+│ CP-2    │ Kubernetes Control Plane │ 10.0.2.19          │ 192.168.16.119             │ 3    │ 2 GB  │ 20 GB   │
+│ CP-3    │ Kubernetes Control Plane │ 10.0.2.20          │ 192.168.16.120             │ 3    │ 2 GB  │ 20 GB   │
+│ Node-1  │ Kubernetes Worker        │ 10.0.2.21          │ 192.168.16.121             │ 3    │ 4 GB  │ 25 GB   │
+│ Node-2  │ Kubernetes Worker        │ 10.0.2.22          │ 192.168.16.122             │ 3    │ 4 GB  │ 25 GB   │
+│ LB-1    │ External Load Balancer   │ 10.0.2.23          │ 192.168.16.123             │ 1    │ 1 GB  │ 10 GB   │
+│ LB-2    │ External Load Balancer   │ 10.0.2.23          │ 192.168.16.123             │ 1    │ 1 GB  │ 10 GB   │
 ├─────────┼──────────────────────────┼────────────────────┼────────────────────────────┼──────┼───────┼─────────┤
 │ Total   │ 6 Virtual Machines       │                    │                            │ 11   │ 17 GB │ 88 GB   │
 └─────────┴──────────────────────────┴────────────────────┴────────────────────────────┴──────┴───────┴─────────┘
@@ -126,7 +127,7 @@ This is a brief explantion and more a presentaion of how the project is shaped a
 │ Network                     │ CIDR            │ Purpose                                                                    │ Connected VMs │
 ├─────────────────────────────┼─────────────────┼────────────────────────────────────────────────────────────────────────────┼───────────────┤
 │ NAT Network (enp0s3)        │ 10.0.2.0/24     │ Internet access, package installation, external connectivity               │ All           │
-│ Private Cluster (enp0s8)    │ 192.168.55.0/24 │ Kubernetes communication, node networking, services, load balancer backend │ All           │
+│ Private Cluster (enp0s8)    │ 192.168.16.0/24 │ Kubernetes communication, node networking, services, load balancer backend │ All           │
 └─────────────────────────────┴─────────────────┴────────────────────────────────────────────────────────────────────────────┴───────────────┘
 ```
 ### Cluster Composition
@@ -136,9 +137,9 @@ This is a brief explantion and more a presentaion of how the project is shaped a
 ├─────────────────────────────┼──────────┼─────────────────────────────────────────────────────────────┤
 │ Control Plane Nodes         │ 3        │ High-availability Kubernetes control plane                  │
 │ Worker Nodes                │ 2        │ Hosts application workloads and platform services           │
-│ External Load Balancer VM   │ 1        │ Routes external traffic to the Kubernetes Ingress Controller│
+│ External Load Balancer VM   │ 2        │ Routes external traffic to the Kubernetes Ingress Controller│
 ├─────────────────────────────┼──────────┼─────────────────────────────────────────────────────────────┤
-│ Total Virtual Machines      │ 6        │ Complete Kubernetes infrastructure                          │
+│ Total Virtual Machines      │ 7        │ Complete Kubernetes infrastructure                          │
 └─────────────────────────────┴──────────┴─────────────────────────────────────────────────────────────┘
 ```
 ### Tpology/Schema
@@ -185,16 +186,25 @@ This is a brief explantion and more a presentaion of how the project is shaped a
                                   Kubernetes Cluster Boundary
        ═════════════════════════════════════════════════════════════════════════════════════
                                                 │
-                                        Ingress Controller
+                                      Ingress Controllers
                                     (NGINX / Traefik Ingress)
+                                           ▲        ▲
+                                           │        │
+                      ┌────────────────────┘        └────────────────────┐
+                      │                                                  │
+             ┌────────▼────────┐                                ┌────────▼────────┐
+             │ Application LB-1│                                │ Application LB-2│
+             │ (HAProxy/NGINX) │                                │ (HAProxy/NGINX) │
+             └────────┬────────┘                                └────────┬────────┘
+                      │                                                  │
+                      └─────────────────────────┬────────────────────────┘
                                                 │
+                                                ▲
+                                                |
+                                                |
+                                           HTTP / HTTPS
                                                 │
-                                     Application Load Balancer
-                                       (HAProxy / NGINX VM)
-                                                │
-                                            HTTP/HTTPS
-                                                │
-                                             Internet
+                                       Internet / WAN
                                                 │
                                              Clients
 ```
@@ -215,40 +225,40 @@ CI/CD pipeline with gitOps
 
 
 ## Phase 2 - Install k8s
-bitch
+
 
 ## Phase 3 - Multi-Namespace Environment
-bitch
+
 
 ## Phase 4 - Deploy Applications
-bitch
+
 
 ## Phase 5 - Ingress
-bitch
+
 
 ## Phase 6 - Persistent Storage
-bitch
+
 
 ## Phase 7 - Monitoring Stack
-bitch
+
 
 ## Phase 8 - Logging
-bitch
+
 
 ## Phase 9 - GitOps / CI-CD
-bitch
+
 
 ## Phase 10 - Autoscaling
-bitch
+
 
 ## Phase 11 - Security
-bitch
+
 
 ## Phase 8 - Backup
-bitch
+
 
 ## Phase 8 - Disaster Recovery
-bitch
+
 
 ## Phase 8 - Documentation
-bitch
+
