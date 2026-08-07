@@ -115,8 +115,8 @@ This is a brief explantion and more a presentaion of how the project is shaped a
 │ CP-3    │ Kubernetes Control Plane │ 10.0.2.20          │ 192.168.16.120             │ 3    │ 2 GB  │ 20 GB   │
 │ Node-1  │ Kubernetes Worker        │ 10.0.2.21          │ 192.168.16.121             │ 3    │ 4 GB  │ 25 GB   │
 │ Node-2  │ Kubernetes Worker        │ 10.0.2.22          │ 192.168.16.122             │ 3    │ 4 GB  │ 25 GB   │
-│ LB-1    │ External Load Balancer   │ 10.0.2.23          │ 192.168.16.123             │ 1    │ 1 GB  │ 10 GB   │
-│ LB-2    │ External Load Balancer   │ 10.0.2.23          │ 192.168.16.123             │ 1    │ 1 GB  │ 10 GB   │
+│ LB-1    │ External Load Balancer   │ 10.0.2.23          │ 192.168.16.123             │ 1    │ 1 GB  │ 20 GB   │
+│ LB-2    │ External Load Balancer   │ 10.0.2.24          │ 192.168.16.124             │ 1    │ 1 GB  │ 20 GB   │
 ├─────────┼──────────────────────────┼────────────────────┼────────────────────────────┼──────┼───────┼─────────┤
 │ Total   │ 6 Virtual Machines       │                    │                            │ 11   │ 17 GB │ 88 GB   │
 └─────────┴──────────────────────────┴────────────────────┴────────────────────────────┴──────┴───────┴─────────┘
