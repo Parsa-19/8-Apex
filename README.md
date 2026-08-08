@@ -128,14 +128,14 @@ The three control-plane nodes provide a highly available Kubernetes control plan
 
 The current lab uses Rocky Linux minimal VMs for all the nodes running on VirtualBox.
 
-| VM     | Role                     |     Private IP | vCPU |  RAM | Storage |
-| ------ | ------------------------ | -------------: | ---: | ---: | ------: |
-| CP-1   | Kubernetes Control Plane | 192.168.55.118 |    2 | 2 GB |   10 GB |
-| CP-2   | Kubernetes Control Plane | 192.168.55.119 |    2 | 2 GB |   10 GB |
-| CP-3   | Kubernetes Control Plane | 192.168.55.120 |    2 | 2 GB |   10 GB |
-| Node-1 | Kubernetes Worker        | 192.168.55.121 |    2 | 5 GB |   25 GB |
-| Node-2 | Kubernetes Worker        | 192.168.55.122 |    2 | 5 GB |   25 GB |
-| App-LB | External Load Balancer   | 192.168.55.123 |    1 | 2 GB |   10 GB |
+| VM        | Role                     | NAT (enp0s3) | Private (enp0s8) |   vCPU |       RAM |    Storage |
+| --------- | ------------------------ | -----------: | ---------------: | -----: | --------: | ---------: |
+| CP-1      | Kubernetes Control Plane |    10.0.2.18 |   192.168.55.118 |      2 |      2 GB |      10 GB |
+| CP-2      | Kubernetes Control Plane |    10.0.2.19 |   192.168.55.119 |      2 |      2 GB |      10 GB |
+| CP-3      | Kubernetes Control Plane |    10.0.2.20 |   192.168.55.120 |      2 |      2 GB |      10 GB |
+| Node-1    | Kubernetes Worker        |    10.0.2.21 |   192.168.55.121 |      2 |      5 GB |      25 GB |
+| Node-2    | Kubernetes Worker        |    10.0.2.22 |   192.168.55.122 |      2 |      5 GB |      25 GB |
+| App-LB    | External Load Balancer   |    10.0.2.23 |   192.168.55.123 |      1 |      2 GB |      10 GB |
 
 **Total:** 6 virtual machines, 11 vCPU, 18 GB RAM, 90 GB storage.
 
