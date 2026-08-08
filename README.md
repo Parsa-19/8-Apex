@@ -1,147 +1,68 @@
-# General Idea
-This is a basic k8s cluster project setup which is a design of a **production k8s platform** that is going to help me build a whole infrastructure from the scratch and improve in my DevOps skills.
+# 8-Apex — Production-Like Kubernetes Platform
 
-although for now I've planned to implement it localy on VirtualBox machines but It'll grow.
+> A hands-on DevOps project for designing, deploying, and operating a production-inspired Kubernetes platform from scratch using Linux, kubeadm, containerd, Cilium, and open-source infrastructure tools.
 
+---
+
+## Overview
+
+**8-Apex** is a personal DevOps project focused on building a production-like Kubernetes platform from the ground up.
+
+The goal is not simply to create a Kubernetes cluster, but to build a reusable platform capable of hosting multiple applications while providing:
+
+- High availability
+- Application load balancing
+- Persistent storage
+- Monitoring and logging
+- CI/CD and GitOps
+- Automated scaling
+- Backup and disaster recovery
+- Security and access control
+
+The project is currently being developed locally using VirtualBox VMs. The infrastructure is designed so that it can be extended to a larger or cloud-based environment later.
+
+---
+
+## Project Goals
+
+The main goals of 8-Apex are to:
+
+1. Build a highly available Kubernetes cluster using `kubeadm`.
+2. Gain practical experience managing Kubernetes on Linux.
+3. Deploy real-world applications rather than simple demonstration workloads.
+4. Implement production-oriented infrastructure and platform services.
+5. Automate application deployment through CI/CD and GitOps.
+6. Implement monitoring, logging, storage, backups, and disaster recovery.
+7. Document the architecture, implementation, troubleshooting, and lessons learned.
+
+---
+
+## Development Environments
+
+This project is currently maintained across two local lab environments.
+
+The branches:
+
+- `tuf`
+- `sherkat`
+
+represent the same project architecture implemented on different physical machines.
+
+The infrastructure-specific configuration may differ between environments, while the overall architecture and objectives remain the same.
+
+---
+
+# Architecture
+
+The initial infrastructure consists of:
+
+- **3 Kubernetes control-plane nodes**
+- **2 Kubernetes worker nodes**
+- **1 external load-balancer VM**
+
+The three control-plane nodes provide a highly available Kubernetes control plane. An external load balancer provides a stable endpoint for Kubernetes API traffic and can also be used as the entry point for application traffic.
 > [!NOTE]
-> This repo contains 2 branches named `tuf` and `sherkat` which is the same basic idea implemented on two device environment labs. for example `tuf` is a branch which I decided to use to develop the project on my laptop device and `sherkat` is another branch dedicated for the PC device in sherkat. 
-
-# project 8-Apex
-The project's name is **8-Apex** means k8s at it's highst level of response and functionalities.
-
-8-Apex is not just about k8s cluster but a whole ready platform to host multiple production applicatons with the implementations of automated deployment and tools to maintain and monitor your applicatoins; for example it consists of:
- - loggin and monitroing stacks
- - prepared container images
- - CI/CD piplines and automated deployments
- - persistant data storage solutions
- - backups
- - high availabel cluster control planes
- - application LoadBalancer
-
-
-### Structure
-This is a basic demonstration of cluster schema.<br>
-It contains:
- * 3 load balanced Control-planes
- * 2 Worker-nodes
- * 1 applicatin level load balancer for network traffic entry point
-```
-                  kubectl
-                     |
-               api-server LB
-                     |
-   ┌─────────────────┼─────────────────┐
-   |                 |                 |
-  CP-1              CP-2              CP-2
-(api-server)      (api-server)      (api-server)
-   │                 │                 |
-   └─────────────────┼─────────────────┘
-                     |    
-        ┌────────────┴────────────┐
-        |                         |
-        |                         |   
-      Node1                     Node2
-      (pods)                    (pods)
-        |                         |   
-        |                         |          CLUSTER
------------------------------------------------------
-        |                         |          INTERNET
-        |                         |
-        └────────────┬────────────┘
-                     |
-               Application-LB
-                     |
-                     |
-                  Traffic
-```
-
-### VM settings
-Each VM is Rocky-10.2 minimal.<br>
-there is two network interface for each of them:
-  - *enp0s3* - a NAT Network interface (just for tests and internet accessibility)
-  - *enp0s8* - a host-only interface specified as the **node's main IP address**. 
-
-### Cluster Details And Tools List
-- cluster is created using **kubeadm**
-- CRI is **containerd**
-- CNI is **Cilium**
-- **Helm** as package manager
-- **HeadLamp** as visual dashboard
-- seprated **namespaces** for each environments:
-    * kube-system
-    * production
-    * staging
-    * monitoring
-    * ingress
-    * database
-    * logging
-    * ci-cd
-    * tools (internal utilities like admin tools, dashboard, MinIO...)
-- deployed apps each with **(Deployments, Service, ConfigMap, Secret, PersistentVolumeClaim)**:
-    * Laravel API
-    * Django API
-    * React frontend
-    * Redis
-    * RabbitMQ
-    * MySQL
-- Ingress:
-    * `api.example.local`
-    * `dashboard.example.local`
-    * `django.example.local`
-    * `grafana.example.local`
-- persistent Storage:
-    * MySQL
-    * PostgreSQL
-    * Redis persistence
-- Monitoring stack with **Prometheus & Grafana**
-- **ELK** Logging stack 
-- GitOps / CI-CD
-- Autoscale
-- RBAC, Secrets
-- Velero or etcd snapshots for backup
-
-
-# Projects Phases
-This is a brief explantion and more a presentaion of how the project is shaped and planned phase by phase. The exact implementaion steps are explained in docs.
-
-## Phase 1 - Infrastructure 
-### VM specification and resource allociatons 
-```
-┌─────────┬──────────────────────────┬────────────────────┬────────────────────────────┬──────┬───────┬─────────┐
-│ VM Name │ Role                     │ NAT (enp0s3)       │ Private (enp0s8)           │ vCPU │ RAM   │ Storage │
-├─────────┼──────────────────────────┼────────────────────┼────────────────────────────┼──────┼───────┼─────────┤
-│ CP-1    │ Kubernetes Control Plane │ 10.0.2.18          │ 192.168.55.118             │ 2    │ 2 GB  │ 10 GB   │
-│ CP-2    │ Kubernetes Control Plane │ 10.0.2.19          │ 192.168.55.119             │ 2    │ 2 GB  │ 10 GB   │
-│ CP-3    │ Kubernetes Control Plane │ 10.0.2.20          │ 192.168.55.120             │ 2    │ 2 GB  │ 10 GB   │
-│ Node-1  │ Kubernetes Worker        │ 10.0.2.21          │ 192.168.55.121             │ 2    │ 5 GB  │ 25 GB   │
-│ Node-2  │ Kubernetes Worker        │ 10.0.2.22          │ 192.168.55.122             │ 2    │ 5 GB  │ 25 GB   │
-│ App-LB  │ External Load Balancer   │ 10.0.2.23          │ 192.168.55.123             │ 1    │ 2 GB  │ 10 GB   │
-├─────────┼──────────────────────────┼────────────────────┼────────────────────────────┼──────┼───────┼─────────┤
-│ Total   │ 6 Virtual Machines       │                    │                            │ 11   │ 17 GB │ 88 GB   │
-└─────────┴──────────────────────────┴────────────────────┴────────────────────────────┴──────┴───────┴─────────┘
-```
-### Network Configuration
-```
-┌─────────────────────────────┬─────────────────┬────────────────────────────────────────────────────────────────────────────┬───────────────┐
-│ Network                     │ CIDR            │ Purpose                                                                    │ Connected VMs │
-├─────────────────────────────┼─────────────────┼────────────────────────────────────────────────────────────────────────────┼───────────────┤
-│ NAT Network (enp0s3)        │ 10.0.2.0/24     │ Internet access, package installation, external connectivity               │ All           │
-│ Private Cluster (enp0s8)    │ 192.168.55.0/24 │ Kubernetes communication, node networking, services, load balancer backend │ All           │
-└─────────────────────────────┴─────────────────┴────────────────────────────────────────────────────────────────────────────┴───────────────┘
-```
-### Cluster Composition
-```
-┌─────────────────────────────┬──────────┬─────────────────────────────────────────────────────────────┐
-│ Component                   │ Quantity │ Description                                                 │
-├─────────────────────────────┼──────────┼─────────────────────────────────────────────────────────────┤
-│ Control Plane Nodes         │ 3        │ High-availability Kubernetes control plane                  │
-│ Worker Nodes                │ 2        │ Hosts application workloads and platform services           │
-│ External Load Balancer VM   │ 1        │ Routes external traffic to the Kubernetes Ingress Controller│
-├─────────────────────────────┼──────────┼─────────────────────────────────────────────────────────────┤
-│ Total Virtual Machines      │ 6        │ Complete Kubernetes infrastructure                          │
-└─────────────────────────────┴──────────┴─────────────────────────────────────────────────────────────┘
-```
-### Tpology/Schema
+> for ha control planes, etcd needs odd number of control plane nodes to work efficient.
 ```
                                      Cluster Administration
                                             (kubectl)
@@ -198,44 +119,536 @@ This is a brief explantion and more a presentaion of how the project is shaped a
                                                 │
                                              Clients
 ```
-> [!NOTE]
-> for ha control planes, etc needs odd number of control plane nodes.
 
+---
 
+# Infrastructure
 
-namespace design
+## Virtual Machines/Resources
 
-database design
+The current lab uses Rocky Linux minimal VMs for all the nodes running on VirtualBox.
 
-external LB
+| VM     | Role                     |     Private IP | vCPU |  RAM | Storage |
+| ------ | ------------------------ | -------------: | ---: | ---: | ------: |
+| CP-1   | Kubernetes Control Plane | 192.168.55.118 |    2 | 2 GB |   10 GB |
+| CP-2   | Kubernetes Control Plane | 192.168.55.119 |    2 | 2 GB |   10 GB |
+| CP-3   | Kubernetes Control Plane | 192.168.55.120 |    2 | 2 GB |   10 GB |
+| Node-1 | Kubernetes Worker        | 192.168.55.121 |    2 | 5 GB |   25 GB |
+| Node-2 | Kubernetes Worker        | 192.168.55.122 |    2 | 5 GB |   25 GB |
+| App-LB | External Load Balancer   | 192.168.55.123 |    1 | 2 GB |   10 GB |
 
-CI/CD pipeline with gitOps
-    container registry (docker hub or gitlab)
+**Total:** 6 virtual machines, 11 vCPU, 18 GB RAM, 90 GB storage.
 
+---
 
+## Network
 
-## Phase 2 - Install k8s
+Each VM has two network interfaces:
 
-## Phase 3 - Multi-Namespace Environment
+### `enp0s3` — NAT Network
 
-## Phase 4 - Deploy Applications
+Used for:
 
-## Phase 5 - Ingress
+- Internet access
+- Package installation
+- External connectivity
 
-## Phase 6 - Persistent Storage
+Network:
 
-## Phase 7 - Monitoring Stack
+```text
+10.0.2.0/24
+```
 
-## Phase 8 - Logging
+### `enp0s8` — Private Cluster Network
 
-## Phase 9 - GitOps / CI-CD
+Used as the primary cluster network for:
 
-## Phase 10 - Autoscaling
+- Kubernetes node communication
+- Cluster services
+- Application traffic
+- Load-balancer communication
 
-## Phase 11 - Security
+Network:
 
-## Phase 8 - Backup
+```text
+192.168.55.0/24
+```
 
-## Phase 8 - Disaster Recovery
+---
 
-## Phase 8 - Documentation
+# Kubernetes Stack
+
+The cluster is built using the following technologies:
+
+| Component               | Technology              |
+| ----------------------- | ----------------------- |
+| Operating System        | Rocky Linux             |
+| Kubernetes Installation | kubeadm                 |
+| Container Runtime       | containerd              |
+| CNI                     | Cilium                  |
+| Package Manager         | Helm                    |
+| Kubernetes Dashboard    | Headlamp                |
+| Ingress                 | TBD                     |
+| External Load Balancer  | HAProxy / NGINX         |
+| Monitoring              | Prometheus + Grafana    |
+| Logging                 | ELK                     |
+| Backup                  | Velero / etcd snapshots |
+| CI/CD                   | GitHub Actions          |
+| GitOps                  | Planned                 |
+
+---
+
+# Namespace Design
+
+The cluster will be logically separated into namespaces based on responsibility:
+
+```text
+kube-system
+production
+staging
+monitoring
+ingress
+database
+logging
+ci-cd
+tools
+```
+
+The `tools` namespace is intended for internal utilities such as administrative tools, dashboards, and MinIO.
+
+This separation provides a cleaner organizational structure and makes it possible to apply resource limits, access policies, and security controls independently.
+
+---
+
+# Applications
+
+The platform is intended to host multiple applications and supporting services.
+
+### Applications
+
+- Laravel API
+- Django API
+- React frontend
+
+### Supporting Services
+
+- Redis
+- RabbitMQ
+- MySQL
+
+Applications will use Kubernetes resources such as:
+
+- Deployments
+- Services
+- ConfigMaps
+- Secrets
+- PersistentVolumeClaims
+
+The exact Kubernetes resources used by each application may vary depending on its requirements.
+
+---
+
+# Application Traffic
+
+The planned application traffic flow is:
+
+```text
+Client
+   │
+   ▼
+External Load Balancer
+   │
+   ▼
+Ingress Controller
+   │
+   ├── api.example.local
+   │        │
+   │        ▼
+   │     Laravel API
+   │
+   ├── django.example.local
+   │        │
+   │        ▼
+   │     Django API
+   │
+   ├── dashboard.example.local
+   │        │
+   │        ▼
+   │     Platform Dashboard
+   │
+   └── grafana.example.local
+            │
+            ▼
+         Grafana
+```
+
+These hostnames are currently intended for the local lab environment.
+
+---
+
+# Persistent Storage
+
+Persistent storage will be implemented for stateful services such as:
+
+- MySQL
+- PostgreSQL
+- Redis
+
+The project will investigate Kubernetes storage concepts including:
+
+- PersistentVolumes
+- PersistentVolumeClaims
+- StorageClasses
+- Dynamic provisioning
+
+---
+
+# Monitoring
+
+The monitoring stack will use:
+
+- Prometheus
+- Grafana
+
+The goal is to monitor both the Kubernetes platform and the applications running on it.
+
+Examples of monitored metrics include:
+
+- Node CPU and memory usage
+- Disk usage
+- Pod health
+- Pod restarts
+- Application resource consumption
+- Cluster resource utilization
+
+Grafana dashboards will be used to visualize the collected metrics.
+
+---
+
+# Logging
+
+Centralized logging is planned using the **ELK stack**.
+
+The logging platform will provide a central location for collecting and investigating logs generated by:
+
+- Kubernetes components
+- Application containers
+- Infrastructure services
+
+---
+
+# CI/CD and GitOps
+
+Application deployment will be automated through a CI/CD pipeline.
+
+The planned workflow is:
+
+```text
+Developer
+    │
+    ▼
+GitHub Repository
+    │
+    ▼
+GitHub Actions
+    │
+    ├── Run Tests
+    ├── Build Container Image
+    └── Push Image
+             │
+             ▼
+      Container Registry
+             │
+             ▼
+       Kubernetes Cluster
+             │
+             ▼
+        Application
+```
+
+GitOps will be introduced later to manage Kubernetes deployments declaratively.
+
+The project may use a GitOps tool such as Argo CD depending on the final implementation.
+
+---
+
+# Autoscaling
+
+The platform will investigate Kubernetes autoscaling capabilities.
+
+The planned implementation includes:
+
+- Metrics Server
+- Horizontal Pod Autoscaler
+- Resource requests and limits
+- Load testing
+
+The objective is to demonstrate how applications can automatically scale based on resource utilization.
+
+---
+
+# Security
+
+Security will be implemented progressively throughout the project.
+
+Planned areas include:
+
+- RBAC
+- Kubernetes Secrets
+- Network Policies
+- Resource Quotas
+- Namespace isolation
+- Secure container configuration
+- Linux host hardening
+
+Security decisions and implementation details will be documented as the project progresses.
+
+---
+
+# Backup and Disaster Recovery
+
+The project will include backup and recovery procedures for the Kubernetes environment.
+
+Potential technologies include:
+
+- Velero
+- etcd snapshots
+
+Failure scenarios will be intentionally tested, including:
+
+- Worker node failure
+- Pod failure
+- Control-plane node failure
+- Application recovery
+- Data restoration
+
+The goal is not only to create backups but also to **verify that the system can actually be recovered from them**.
+
+---
+
+# Project Phases
+
+The project is being implemented incrementally.
+
+## Phase 1 — Infrastructure
+
+- Create VirtualBox VMs
+- Configure networking
+- Configure hostnames
+- Configure static IP addresses
+- Prepare Linux nodes
+- Install containerd
+- Configure required kernel/network settings
+
+## Phase 2 — Kubernetes Cluster
+
+- Install Kubernetes components
+- Initialize the first control plane
+- Join additional control-plane nodes
+- Join worker nodes
+- Configure Cilium
+- Verify cluster health
+
+## Phase 3 — High Availability
+
+- Configure the Kubernetes API load balancer
+- Verify API-server failover
+- Test control-plane node failures
+- Document the HA architecture
+
+## Phase 4 — Cluster Organization
+
+- Create namespaces
+- Configure RBAC
+- Define resource policies
+- Configure Helm
+- Install Headlamp
+
+## Phase 5 — Application Platform
+
+- Deploy Laravel
+- Deploy Django
+- Deploy React
+- Deploy Redis
+- Deploy RabbitMQ
+- Deploy MySQL
+- Configure Services, ConfigMaps, Secrets, and storage
+
+## Phase 6 — Networking and Ingress
+
+- Deploy an Ingress Controller
+- Configure application routing
+- Configure external load balancing
+- Introduce HTTPS
+
+## Phase 7 — Persistent Storage
+
+- Configure StorageClasses
+- Configure PersistentVolumes
+- Configure PersistentVolumeClaims
+- Test stateful applications
+
+## Phase 8 — Monitoring
+
+- Deploy Prometheus
+- Deploy Grafana
+- Create cluster dashboards
+- Monitor application health
+
+## Phase 9 — Logging
+
+- Deploy the logging stack
+- Collect application logs
+- Collect infrastructure logs
+- Create useful log queries and dashboards
+
+## Phase 10 — CI/CD and GitOps
+
+- Create GitHub Actions pipelines
+- Build application container images
+- Push images to a container registry
+- Automate Kubernetes deployments
+- Introduce GitOps
+
+## Phase 11 — Autoscaling
+
+- Install Metrics Server
+- Configure resource requests and limits
+- Configure Horizontal Pod Autoscaling
+- Perform load tests
+
+## Phase 12 — Security
+
+- Configure RBAC
+- Configure Network Policies
+- Secure Secrets
+- Apply namespace and resource isolation
+
+## Phase 13 — Backup and Disaster Recovery
+
+- Configure backups
+- Create recovery procedures
+- Test etcd/application backups
+- Simulate node failures
+- Perform restoration tests
+
+## Phase 14 — Documentation
+
+Document:
+
+- Architecture
+- Installation
+- Configuration
+- Deployment procedures
+- Troubleshooting
+- Monitoring
+- Backup and recovery
+- Lessons learned
+
+---
+
+# Repository Structure
+
+The repository will be organized approximately as follows:
+
+```text
+8-apex/
+│
+├── docs/
+│   ├── architecture/
+│   ├── infrastructure/
+│   ├── kubernetes/
+│   ├── networking/
+│   ├── storage/
+│   ├── monitoring/
+│   ├── logging/
+│   ├── security/
+│   └── disaster-recovery/
+│
+├── kubernetes/
+│   ├── namespaces/
+│   ├── ingress/
+│   ├── monitoring/
+│   ├── logging/
+│   ├── laravel/
+│   ├── django/
+│   ├── react/
+│   ├── redis/
+│   ├── rabbitmq/
+│   └── mysql/
+│
+├── scripts/
+│
+├── diagrams/
+│
+├── .github/
+│   └── workflows/
+│
+└── README.md
+```
+
+---
+
+# Current Status
+
+> **Status: In Development**
+
+The project is being implemented incrementally. Features listed above represent the current architecture and implementation plan; individual components will be marked as completed as they are implemented and tested.
+
+### Progress
+
+- [x] Initial architecture design
+- [x] VirtualBox lab design
+- [x] VM/network planning
+- [ ] Kubernetes cluster installation
+- [ ] High-availability control plane
+- [ ] Cilium
+- [ ] Namespace architecture
+- [ ] Ingress
+- [ ] Persistent storage
+- [ ] Laravel deployment
+- [ ] Django deployment
+- [ ] React deployment
+- [ ] Monitoring
+- [ ] Logging
+- [ ] CI/CD
+- [ ] GitOps
+- [ ] Autoscaling
+- [ ] Security
+- [ ] Backup
+- [ ] Disaster recovery
+
+---
+
+# Learning Objectives
+
+Through this project, I aim to gain practical experience in:
+
+- Linux system administration
+- Kubernetes administration
+- Kubernetes networking
+- Containerization
+- High availability
+- Load balancing
+- Infrastructure monitoring
+- Centralized logging
+- Persistent storage
+- CI/CD
+- GitOps
+- Security
+- Backup and disaster recovery
+- Production-oriented troubleshooting
+
+The focus is not only on deploying services, but on understanding **why each component is needed, how the components interact, and how the platform behaves when something fails.**
+
+---
+
+# Project Philosophy
+
+> **Build it. Break it. Understand it. Document it.**
+
+8-Apex is a learning project, but it is intentionally designed around production concepts.
+
+Whenever possible, the project will include failure testing, troubleshooting, and recovery rather than stopping once a service successfully starts.
+
+The objective is to turn theoretical Kubernetes and DevOps knowledge into practical infrastructure engineering experience.
