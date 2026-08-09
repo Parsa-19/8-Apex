@@ -1,6 +1,3 @@
-dns change to 8.8.8.8 8.8.4.4 1.1.1.1 1.0.0.1
-
-su parsa
 dnf install vim
 dnf install -y python3 python3-pip
 pip install --upgrade pip
@@ -37,7 +34,9 @@ parsa@CP-1> ansible nodes -m ping -i inventory.ini
 
 do this on all agent nodes:
 sudo visudo -f /etc/sudoers.d/parsa
+```
 parsa ALL=(ALL) NOPASSWD: ALL
+```
 
 then you can play palybooks that needs sudo access:
 parsa@CP-1> ansible-palybook -i inventory.ini palybook.yml
