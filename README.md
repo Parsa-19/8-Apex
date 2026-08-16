@@ -60,65 +60,94 @@ The initial infrastructure consists of:
 - **2 Kubernetes worker nodes**
 - **1 external load-balancer VM**
 
-The three control-plane nodes provide a highly available Kubernetes control plane. An external load balancer provides a stable endpoint for Kubernetes API traffic and can also be used as the entry point for application traffic.
+The three control-plane nodes provide a highly available Kubernetes control plane.
+This is a High Available k8s cluster which means it has 3 Control Planes ensuring Singel Point of Failure and Control Plane Redundancy. 
+
+etcd architecture design is **stacked etcd topology** meaning that all etcd members are inside their related control plane node but connected to each other. 
 > [!NOTE]
-> for ha control planes, etcd needs odd number of control plane nodes to work efficient.
+> for ha control planes, etcd needs odd number of control plane nodes to work efficient and be synced if one CP gows down and its etcd lose data track. so there is two more etc and it could be recovered.
+```text
+                              Cluster Administration
+                                     (kubectl)
+                                         │
+                                         │  HTTPS :6443
+                                         ▼
+                     ┌─────────────────────────────────────────┐
+                     │ Kubernetes API Virtual IP (kube-vip)    │
+                     │                                         │
+                     │ VIP: 10.0.0.100:6443                    │
+                     │                                         │
+                     │ • Provides HA Virtual IP for Kubernetes │
+                     │   API Server                            │
+                     │ • kube-vip runs on all Control Planes   │
+                     │ • One node is Active/Leader at a time   │
+                     │ • VIP automatically moves if the leader │
+                     │   fails                                 │
+                     │ • No dedicated API load-balancer node   │
+                     │   required                              │
+                     └───────────────────┬─────────────────────┘
+                                         │                          
+                 ┌───────────────────────┼────────────────────────┐
+                 │                       │                        │
+                 ▼                       ▼                        ▼
+        ┌────────────────┐       ┌────────────────┐       ┌────────────────┐
+        │ CP-1           │       │ CP-2           │       │ CP-3           │
+        │ Control Plane  │       │ Control Plane  │       │ Control Plane  │
+        │                │       │                │       │                │
+        │ kube-vip       │       │ kube-vip       │       │ kube-vip       │
+        │ VIP:           │       │ VIP:           │       │ VIP:           │
+        │ 10.0.0.100     │       │ 10.0.0.100     │       │ 10.0.0.100     │
+        │ Active/Leader  │       │ Backup         │       │ Backup         │
+        │                │       │                │       │                │
+        │ API Server     │       │ API Server     │       │ API Server     │
+        │ Scheduler      │       │ Scheduler      │       │ Scheduler      │
+        │ Controller Mgr │       │ Controller Mgr │       │ Controller Mgr │
+        │ etcd Member    │◄─────►│ etcd Member    │◄─────►│ etcd Member    │
+        └───────┬────────┘       └───────┬────────┘       └───────┬────────┘
+                │                        │                        │
+                │                        │                        │
+                └──────────────── etcd Cluster (Raft) ────────────┘
+                                         │
+                                         │
+                              Cluster Control Plane
+                                         │
+         ────────────────────────────────┼────────────────────────────────
+                                         │
+                     ┌───────────────────┴────────────────────┐
+                     │                                        │
+           ┌─────────▼──────────┐                   ┌─────────▼──────────┐
+           │ Worker Node-1      │                   │ Worker Node-2      │
+           │                    │                   │                    │
+           │ kubelet            │                   │ kubelet            │
+           │ kube-proxy         │                   │ kube-proxy         │
+           │ Container Runtime  │                   │ Container Runtime  │
+           │                    │                   │                    │
+           │ Application Pods   │                   │ Application Pods   │
+           │ Monitoring Pods    │                   │ Logging Pods       │
+           └─────────┬──────────┘                   └─────────┬──────────┘
+                     │                                        │
+                     └──────────── Cluster Services ──────────┘
+                                         │
+   ═════════════════════════════════════════════════════════════════════════════
+                              Kubernetes Cluster Boundary
+   ═════════════════════════════════════════════════════════════════════════════
+                                         │
+                                 Ingress Controller
+                              (NGINX / Traefik Ingress)
+                                         │
+                                         │
+                              Application Load Balancer
+                                (HAProxy / NGINX VM)
+                                         │
+                                     HTTP/HTTPS
+                                         │
+                                      Internet
+                                         │
+                                      Clients
 ```
-                                     Cluster Administration
-                                            (kubectl)
-                                                │
-                                                │  HTTPS :6443
-                                                ▼
-                                   ┌────────────────────────┐
-                                   │ Kubernetes API LB      │
-                                   │ (HAProxy / NGINX)      │
-                                   └────────────┬───────────┘
-                                                │
-                    ┌───────────────────────────┼───────────────────────────┐
-                    │                           │                           │
-            ┌───────▼────────┐          ┌───────▼────────┐          ┌───────▼────────┐
-            │ CP-1           │          │ CP-2           │          │ CP-3           │
-            │ Control Plane  │          │ Control Plane  │          │ Control Plane  │
-            │ API Server     │          │ API Server     │          │ API Server     │
-            │ Scheduler      │          │ Scheduler      │          │ Scheduler      │
-            │ Controller Mgr │          │ Controller Mgr │          │ Controller Mgr │
-            │ etcd Member    │◄────────►│ etcd Member    │◄────────►│ etcd Member    │
-            └───────┬────────┘          └───────┬────────┘          └───────┬────────┘
-                    │                           │                           │
-                    └─────────────── Cluster Control Plane ─────────────────┘
-                                                │
-                              ──────────────────┼──────────────────
-                                                │
-                 ┌──────────────────────────────┴───────────────────────────────┐
-                 │                                                              │
-        ┌────────▼─────────┐                                           ┌────────▼─────────┐
-        │ Worker Node-1    │                                           │ Worker Node-2    │
-        │ kubelet          │                                           │ kubelet          │
-        │ kube-proxy       │                                           │ kube-proxy       │
-        │ Container Runtime│                                           │ Container Runtime│
-        │ Application Pods │                                           │ Application Pods │
-        │ Monitoring Pods  │                                           │ Logging Pods     │
-        └────────┬─────────┘                                           └────────┬─────────┘
-                 │                                                              │
-                 └─────────────────────── Cluster Services ─────────────────────┘
-                                                │
-       ═════════════════════════════════════════════════════════════════════════════════════
-                                  Kubernetes Cluster Boundary
-       ═════════════════════════════════════════════════════════════════════════════════════
-                                                │
-                                        Ingress Controller
-                                    (NGINX / Traefik Ingress)
-                                                │
-                                                │
-                                     Application Load Balancer
-                                       (HAProxy / NGINX VM)
-                                                │
-                                            HTTP/HTTPS
-                                                │
-                                             Internet
-                                                │
-                                             Clients
-```
+there is **no dedicated Kubernetes API LB node** in this design. `kube-vip` runs directly on the control-plane nodes and provides the shared API VIP (`10.0.0.100`). The API traffic is therefore highly available across CP-1, CP-2 and CP-3 while etcd remains replicated across the three control planes.
+
+there is also an external app `haproxy`/`nginx` loadbalancer which routes the traffic to worker nodes and application pods through `ingress controller`.
 
 ---
 
