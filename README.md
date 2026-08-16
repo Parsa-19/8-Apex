@@ -149,6 +149,9 @@ there is **no dedicated Kubernetes API LB node** in this design. `kube-vip` runs
 
 there is also an external app `haproxy`/`nginx` loadbalancer which routes the traffic to worker nodes and application pods through `ingress controller`.
 
+> [!TIP]
+> check the detailed architecture diagram in [diagrams folder](https://github.com/Parsa-19/8-Apex/tree/sherkat/diagrams) in root of repository.
+
 ---
 
 # Infrastructure
