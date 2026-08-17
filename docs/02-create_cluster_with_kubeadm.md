@@ -109,8 +109,8 @@ $ ansible-galaxy collection install community.general
 $ ansible-galaxy collection install ansible.posix
 ``` 
 
-create another file named `k8s-dependencies.yml` to install and configure all dependencies:
-this file is located in the same dir in this folder [here](k8s-dependencies.yml).
+create another file named `k8s-dependencies.yml` to install and configure all dependencies: <br>
+this file is located in the same dir in this folder here ([k8s-dependencies.yml](https://github.com/Parsa-19/8-Apex/blob/tuf/docs/k8s-dependencies.yml)).
 
 run the playbook:
 ```
@@ -119,15 +119,15 @@ $ ansible-playbook -i inventory.ini k8s-dependencies.yml
 
 verify everything:
 ```
-lsmod | grep br_netfilter
-lsmod | grep overlay
+$ lsmod | grep br_netfilter
+$ lsmod | grep overlay
 
-sysctl net.bridge.bridge-nf-call-iptables
-sysctl net.ipv4.ip_forward
+$ sysctl net.bridge.bridge-nf-call-iptables
+$ sysctl net.ipv4.ip_forward
 
-getenforce
+$ getenforce
 
-firewall-cmd --list-ports
+$ firewall-cmd --list-ports
 ```
 
 this playbook will:
