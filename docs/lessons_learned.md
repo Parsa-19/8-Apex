@@ -9,7 +9,8 @@ in this example the ansible user can run any sudo command without asking for pas
 on each agent node you would:
 ```
 $ visudo -f /etc/sudoers.d/ansible
-$ ansible ALL=(ALL) NOPASSWD: ALL
+
+  ansible ALL=(ALL) NOPASSWD: ALL
 ```
 
 ---
