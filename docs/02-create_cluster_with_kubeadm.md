@@ -82,7 +82,7 @@ the check it again with the `grubby --info=ALL` command. they have to be gone by
 
 ### configure ansible to run playbooks
 
-we manage and run ansible playbooks form `CP-1`.
+we manage and run ansible playbooks from `CP-1`.
 ```
 $ mkdir ansible-plays
 ```
@@ -108,169 +108,8 @@ $ ansible-galaxy collection install community.general
 $ ansible-galaxy collection install ansible.posix
 ``` 
 
-create another file named `k8s-dependencies.yml` to install and configure all dependencies:
-```
----
-- name: Kubernetes common dependencies on all nodes
-  hosts:
-    - control-planes
-    - workers
-  become: yes
-  tasks:
-
-    - name: Install required packages
-      ansible.builtin.package:
-        name:
-          - firewalld
-          - iptables
-          - iproute-tc
-        state: present
-
-    - name: Enable and start firewalld
-      ansible.builtin.systemd:
-        name: firewalld
-        enabled: yes
-        state: started
-
-
-    # ----------------------------
-    # Kernel Modules
-    # ----------------------------
-
-    - name: Load overlay kernel module
-      community.general.modprobe:
-        name: overlay
-        state: present
-
-    - name: Load br_netfilter kernel module
-      community.general.modprobe:
-        name: br_netfilter
-        state: present
-
-
-    - name: Persist Kubernetes kernel modules
-      ansible.builtin.copy:
-        dest: /etc/modules-load.d/k8s.conf
-        owner: root
-        group: root
-        mode: "0644"
-        content: |
-          overlay
-          br_netfilter
-
-
-    # ----------------------------
-    # Sysctl Parameters
-    # ----------------------------
-
-    - name: Configure Kubernetes sysctl parameters
-      ansible.builtin.copy:
-        dest: /etc/sysctl.d/k8s.conf
-        owner: root
-        group: root
-        mode: "0644"
-        content: |
-          net.bridge.bridge-nf-call-iptables = 1
-          net.bridge.bridge-nf-call-ip6tables = 1
-          net.ipv4.ip_forward = 1
-
-
-    - name: Apply sysctl configuration
-      ansible.builtin.command:
-        cmd: sysctl --system
-
-
-
-    # ----------------------------
-    # SELinux
-    # ----------------------------
-
-    - name: Set SELinux permissive immediately
-      ansible.builtin.command:
-        cmd: setenforce 0
-      register: selinux_result
-      failed_when: false
-      changed_when: selinux_result.rc == 0
-
-
-    - name: Persist SELinux permissive mode
-      ansible.builtin.replace:
-        path: /etc/selinux/config
-        regexp: '^SELINUX=enforcing'
-        replace: 'SELINUX=permissive'
-
-
-
-# ============================================================
-# Control Plane Firewall Rules
-# ============================================================
-
-- name: Configure firewall on control planes
-  hosts: control-planes
-  become: yes
-
-  tasks:
-
-    - name: Open Kubernetes control plane ports
-      ansible.posix.firewalld:
-        port: "{{ item }}"
-        permanent: yes
-        immediate: yes
-        state: enabled
-      loop:
-        - 6443/tcp
-        - 2379-2380/tcp
-        - 10250/tcp
-        - 10251/tcp
-        - 10252/tcp
-
-
-
-# ============================================================
-# Worker Firewall Rules
-# ============================================================
-
-- name: Configure firewall on workers
-  hosts: workers
-  become: yes
-
-  tasks:
-
-    - name: Open Kubernetes worker ports
-      ansible.posix.firewalld:
-        port: "{{ item }}"
-        permanent: yes
-        immediate: yes
-        state: enabled
-      loop:
-        - 10250/tcp
-        - 30000-32767/tcp
-
-
-
-# ============================================================
-# Load Balancer Firewall Rules
-# ============================================================
-
-- name: Configure firewall on load balancer
-  hosts: lb
-  become: yes
-
-  tasks:
-
-    - name: Enable firewalld
-      ansible.builtin.systemd:
-        name: firewalld
-        enabled: yes
-        state: started
-
-    - name: Open Kubernetes API load balancer port
-      ansible.posix.firewalld:
-        port: 6443/tcp
-        permanent: yes
-        immediate: yes
-        state: enabled
-```
+create another file named `k8s-dependencies.yml` to install and configure all dependencies: <br>
+this file is located in the same dir in this folder here ([k8s-dependencies.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/docs/k8s-dependencies.yml)).
 
 run the playbook:
 ```
@@ -279,16 +118,35 @@ $ ansible-playbook -i inventory.ini k8s-dependencies.yml
 
 verify everything:
 ```
-lsmod | grep br_netfilter
-lsmod | grep overlay
+$ lsmod | grep br_netfilter
+$ lsmod | grep overlay
 
-sysctl net.bridge.bridge-nf-call-iptables
-sysctl net.ipv4.ip_forward
+$ sysctl net.bridge.bridge-nf-call-iptables
+$ sysctl net.ipv4.ip_forward
 
-getenforce
+$ getenforce
 
-firewall-cmd --list-ports
+$ firewall-cmd --list-ports
 ```
+
+this playbook will:
+1. load and persist these kernel modules `br_netfilter` & `overlay`.
+2. apply these kernel parameters:
+    * `net.bridge.bridge-nf-call-iptables = 1`
+    * `net.bridge.bridge-nf-call-ip6tables = 1`
+    * `net.ipv4.ip_forward = 1`
+3. disables SELinux (until its compatible with k8s cluster)
+4. enable these firewalld ports in `control-plane` nodes:
+    - 6443/tcp
+    - 2379-2380/tcp
+    - 10250/tcp
+    - 10251/tcp
+    - 10252/tcp
+5. enable these firewalld ports in `worker` nodes:
+    - 10250/tcp
+    - 30000-32767/tcp
+6. enable this port in `load balancer` nodes:
+    - 6443/tcp
 
 
 
