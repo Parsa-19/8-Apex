@@ -87,26 +87,7 @@ we manage and run ansible playbooks from `CP-1`.
 $ mkdir ansible-plays
 ```
 
-create a `inventory.ini` file and add this in it:
-```
-[control-planes]
-cp-1              ansible_host=192.168.55.118     ansible_connection=ssh      ansible_user=parsa
-cp-2              ansible_host=192.168.55.119     ansible_connection=ssh      ansible_user=parsa
-cp-3              ansible_host=192.168.55.120     ansible_connection=ssh      ansible_user=parsa
-
-[workers]
-node-1            ansible_host=192.168.55.121     ansible_connection=ssh      ansible_user=parsa
-node-2            ansible_host=192.168.55.122     ansible_connection=ssh      ansible_user=parsa
-
-[lb]
-app-lb            ansible_host=192.168.55.123     ansible_connection=ssh      ansible_user=parsa 
-```
-
-first install required ansible collections:
-```
-$ ansible-galaxy collection install community.general
-$ ansible-galaxy collection install ansible.posix
-``` 
+create an `inventory.ini` file with the content from here [inventory.ini](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible-playbooks/inventory.ini):
 
 create another file named `k8s-dependencies.yml` to install and configure all dependencies: <br>
 this file is located in the same dir in this folder here ([k8s-dependencies.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible-playbooks/k8s-dependencies.yml)).
@@ -152,9 +133,26 @@ this playbook will:
 
 ### install kubelet, kubeadm and containerd on CPs and workers
 
-for that I download the each binary files and install t
+for that I download the each binary files and install them.
 
-### install kubectl and configure on CP1
+#### download containerd 2.3.4
+
+#### download containerd.service file 
+
+#### donwload runc v1.5.1 
+
+#### download CNI plugin v1.9.1
+
+#### download crictl
+
+#### download and install kubectl and configure on CP1
+
+then use this playbook to install them all and configure the neccessarty things [install-kubernetes-runtime-and-tools.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible-playbooks/)
+
+then run the playbook:
+```
+ansible-playbook -i inventory.ini install-kubernetes-runtime-and-tools.yml
+```
 
 
 
