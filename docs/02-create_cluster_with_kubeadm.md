@@ -109,7 +109,7 @@ $ ansible-galaxy collection install ansible.posix
 ``` 
 
 create another file named `k8s-dependencies.yml` to install and configure all dependencies: <br>
-this file is located in the same dir in this folder here ([k8s-dependencies.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/docs/k8s-dependencies.yml)).
+this file is located in the same dir in this folder here ([k8s-dependencies.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible-playbooks/k8s-dependencies.yml)).
 
 run the playbook:
 ```
@@ -148,6 +148,13 @@ this playbook will:
 6. enable this port in `load balancer` nodes:
     - 6443/tcp
 
+---
+
+### install kubelet, kubeadm and containerd on CPs and workers
+
+for that I download the each binary files and install t
+
+### install kubectl and configure on CP1
 
 
 
