@@ -1,0 +1,15 @@
+---
+- name: install packages
+  hosts: all
+  become: true
+  tasks:
+    - name: Install vim nano and tmux on all nodes
+      ansible.builtin.dnf:
+        name:
+          - vim
+          - nano
+          - tmux
+          - gtar
+          - unzip
+        state: latest
+        update_cache: true
