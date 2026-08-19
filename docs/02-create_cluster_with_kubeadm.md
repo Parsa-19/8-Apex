@@ -87,7 +87,7 @@ we manage and run ansible playbooks form `CP-1`.
 $ mkdir ansible-plays
 ```
 
-create a `inventory.ini` file and add the contents of this [inventory.ini](inventory.ini) file in it.
+create a `inventory.ini` file and add the contents of this [inventory.ini](https://github.com/Parsa-19/8-Apex/blob/tuf/ansible-playbooks/k8s-dependencies.yml) file in it.
 
 first install required ansible collections:
 ```
@@ -95,7 +95,7 @@ $ ansible-galaxy collection install community.general
 $ ansible-galaxy collection install ansible.posix
 ``` 
 
-create another file named `k8s-dependencies.yml` to install and configure all dependencies from this file [k8s-dependencies.yml](k8s-dependencies.yml).
+create another file named `k8s-dependencies.yml` to install and configure all dependencies from this file [k8s-dependencies.yml](https://github.com/Parsa-19/8-Apex/blob/tuf/ansible-playbooks/inventory.ini).
 
 run the playbook:
 ```
