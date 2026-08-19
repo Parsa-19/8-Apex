@@ -60,11 +60,11 @@ The initial infrastructure consists of:
 - **2 Kubernetes worker nodes**
 - **2 external load-balancer VMs**
 
-The three control-plane nodes provide a highly available Kubernetes control plane. This is a High Available k8s cluster which means it has 3 Control Planes ensuring Singel Point of Failure and Control Plane Redundancy.
+This is a High Available k8s cluster which means it has 3 control-plane nodes ensuring there is no Singel Point of Failure or Control Plane Redundancy.
 
 etcd architecture design is **stacked etcd topology** meaning that all etcd members are inside their related control plane node but connected to each other. 
 > [!NOTE]
-> for ha control planes, etcd needs odd number of control plane nodes to work efficient and be synced if one CP gows down and its etcd lose data track. so there is two more etc and it could be recovered.
+> for ha control planes, etcd needs odd number of control plane nodes to work efficient and be synced. if one CP goes down and its etcd loses data track, there is always two more etcd and it could be recovered.
 ```
                                Cluster Administration
                                       (kubectl)
