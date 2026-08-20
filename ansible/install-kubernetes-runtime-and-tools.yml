@@ -360,9 +360,11 @@
           - "kubeadm --> {{ kubeadm_version_result.stdout }}"
           - "containerd active: {{ containerd_service_status.status.ActiveState }}"
           - "containerd enabled: {{ containerd_service_status.status.UnitFileState }}"
+          
   # ================================================================
   # Handlers
   # ================================================================
+  
   handlers:
 
     - name: Restart containerd
