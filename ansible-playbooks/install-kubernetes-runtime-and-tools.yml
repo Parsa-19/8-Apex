@@ -163,33 +163,44 @@
         dest: "/usr/local/lib/systemd/system/containerd.service"
         mode: "0644"
 
+    # # ============================================================
+    # # Generate containerd configuration
+    # # ============================================================
+
+    # - name: Check whether containerd configuration exists
+    #   ansible.builtin.stat:
+    #     path: "{{ containerd_config_file }}"
+    #   register: containerd_config
+
+    # - name: Generate default containerd configuration
+    #   ansible.builtin.shell:
+    #     cmd: "/usr/local/bin/containerd config default > {{ containerd_config_file }}"
+    #   when: not containerd_config.stat.exists
+    #   changed_when: true
+
+    # # ============================================================
+    # # Configure containerd 2.x systemd cgroup
+    # # ============================================================
+
+    # - name: Configure containerd to use systemd cgroups
+    #   ansible.builtin.blockinfile:
+    #     path: "{{ containerd_config_file }}"
+    #     marker: "# {mark} ANSIBLE KUBERNETES CGROUP CONFIGURATION"
+    #     insertafter: '^version = 3'
+    #     block: |
+    #       [plugins.'io.containerd.cri.v1.runtime'.containerd.runtimes.runc.options]
+    #         SystemdCgroup = true
+    #   notify: Restart containerd
+
     # ============================================================
-    # Generate containerd configuration
+    # use the template to configure containerd with SystemdCgroup: true
     # ============================================================
 
-    - name: Check whether containerd configuration exists
-      ansible.builtin.stat:
-        path: "{{ containerd_config_file }}"
-      register: containerd_config
-
-    - name: Generate default containerd configuration
-      ansible.builtin.shell:
-        cmd: "/usr/local/bin/containerd config default > {{ containerd_config_file }}"
-      when: not containerd_config.stat.exists
-      changed_when: true
-
-    # ============================================================
-    # Configure containerd 2.x systemd cgroup
-    # ============================================================
-
-    - name: Configure containerd to use systemd cgroups
-      ansible.builtin.blockinfile:
-        path: "{{ containerd_config_file }}"
-        marker: "# {mark} ANSIBLE KUBERNETES CGROUP CONFIGURATION"
-        insertafter: '^version = 3'
-        block: |
-          [plugins.'io.containerd.cri.v1.runtime'.containerd.runtimes.runc.options]
-            SystemdCgroup = true
+    - name: Configure containerd
+      ansible.builtin.template:
+        src: "templates/containerd-config.toml.j2"
+        dest: "/etc/containerd/config.toml"
+        mode: "0644"
       notify: Restart containerd
 
     # ============================================================
@@ -345,15 +356,15 @@
           - "{{ containerd_version_result.stdout }}"
           - "{{ runc_version_result.stdout_lines[0] }}"
           - "{{ crictl_version_result.stdout }}"
-          - "{{ kubelet_version_result.stdout }}"
-          - "{{ kubeadm_version_result.stdout }}"
+          - "kubelet --> {{ kubelet_version_result.stdout }}"
+          - "kubeadm --> {{ kubeadm_version_result.stdout }}"
           - "containerd active: {{ containerd_service_status.status.ActiveState }}"
           - "containerd enabled: {{ containerd_service_status.status.UnitFileState }}"
-
+          
   # ================================================================
   # Handlers
   # ================================================================
-
+  
   handlers:
 
     - name: Restart containerd
