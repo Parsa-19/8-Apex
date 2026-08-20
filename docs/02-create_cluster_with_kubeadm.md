@@ -131,6 +131,17 @@ this playbook will:
 
 ---
 
+### install initial packages for the life
+specifically for my rocky v10.2 minimal I have litterally nothing in my OS so wrote a mini playbook to install packages (like tar, unzip, vim and etc...) on all nodes:
+
+[needed-initial-packages.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible-playbooks/needed-initial-packages.yml)
+
+run to insatll:
+```
+ansible-playbook -i inventory.ini needed-initial-packages.yml
+```
+
+
 ### install kubelet, kubeadm and containerd on CPs and workers
 
 for that I download the each binary files and install them.
