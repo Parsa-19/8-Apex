@@ -87,10 +87,10 @@ we manage and run ansible playbooks from `CP-1`.
 $ mkdir ansible-plays
 ```
 
-create an `inventory.ini` file with the content from here [inventory.ini](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible-playbooks/inventory.ini):
+create an `inventory.ini` file with the content from here [inventory.ini](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/inventory.ini):
 
 create another file named `k8s-dependencies.yml` to install and configure all dependencies: <br>
-this file is located in the same dir in this folder here ([k8s-dependencies.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible-playbooks/k8s-dependencies.yml)).
+this file is located in the same dir in this folder here ([k8s-dependencies.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/k8s-dependencies.yml)).
 
 run the playbook:
 ```
@@ -134,7 +134,7 @@ this playbook will:
 ### install initial packages for the life
 specifically for my rocky v10.2 minimal I have litterally nothing in my OS so wrote a mini playbook to install packages (like tar, unzip, vim and etc...) on all nodes:
 
-[needed-initial-packages.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible-playbooks/needed-initial-packages.yml)
+[needed-initial-packages.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/needed-initial-packages.yml)
 
 run to insatll:
 ```
@@ -158,7 +158,7 @@ for that I download the each binary files and install them.
 
 #### download and install kubectl and configure on CP1
 
-then use this playbook to install them all and configure the neccessarty things [install-kubernetes-runtime-and-tools.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible-playbooks/)
+then use this playbook to install them all and configure the neccessarty things [install-kubernetes-runtime-and-tools.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/install-kubernetes-runtime-and-tools.yml)
 
 then run the playbook:
 ```
