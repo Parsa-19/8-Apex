@@ -138,7 +138,16 @@ this playbook will:
 
 ### install kubeadm, kubelet, containerd and kubectl
 
+create a file named `install-kubernetes-runtime-and-tools.yml` and put [this content]() in it. <br>
+create a folder named `templates` and inside that put this file with same name [containerd-config.toml.j2](). <br>
+then run the play book:
+```
+anisble-playbook -i inventory.ini install-kubernetes-runtime-and-tools.yml
+```
+the playbook will do these:
+
 #### on worker and control-plane nodes
+installs:
 - containerd
 - runc
 - cni-plugins
@@ -146,8 +155,72 @@ this playbook will:
 - kubeadm
 - kubelet
 
+1. install containerd:
+```
+$ tar Cxzvf /usr/local containerd-1.6.2-linux-amd64.tar.gz
+bin/
+bin/containerd-shim-runc-v2
+bin/containerd-shim
+bin/ctr
+bin/containerd-shim-runc-v1
+bin/containerd
+bin/containerd-stress
+```
+2. download  https://raw.githubusercontent.com/containerd/containerd/main/containerd.service into `/usr/local/lib/systemd/system/containerd.service`
+and then
+```
+systemctl daemon-reload
+systemctl enable --now containerd
+```
+3. install runc:
+```
+$ install -m 755 runc.amd64 /usr/local/sbin/runc
+```
+4. install cni-plugins:
+```
+$ mkdir -p /opt/cni/bin
+$ tar Cxzvf /opt/cni/bin cni-plugins-linux-amd64-v1.1.1.tgz
+./
+./macvlan
+./static
+./vlan
+./portmap
+./host-local
+./vrf
+./bridge
+./tuning
+./firewall
+./host-device
+./sbr
+./loopback
+./dhcp
+./ptp
+./ipvlan
+./bandwidth
+```
+5. setting up systemd cgroup for containerd(ansible used the template for config.toml)
+generate the default config file:
+```
+sudo mkdir -p /etc/containerd
+sudo containerd config default | sudo tee /etc/containerd/config.toml
+```
+set the systemd cgroup driver in `/etc/containerd/config.toml` by editing the parameter SystemdCgroup value and changing it from false to true:
+```
+vim /etc/containerd/config.toml
+    > search for SystemdCgroup
+    > change to true
+```
+after the change restart:
+```
+sudo systemctl restart containerd
+install crictl too
+```
+6. install crictl and configure it with containerd
+7. install kubeadm 
+8. install kubelet and configure its service
+
 #### just on cp-1:
-- kubectls
+just isntalls kubectl 
 
 
 
