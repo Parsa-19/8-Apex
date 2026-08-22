@@ -141,6 +141,7 @@ run to insatll:
 ansible-playbook -i inventory.ini needed-initial-packages.yml
 ```
 
+---
 
 ## install kubelet, kubeadm and containerd on CPs and workers
 
@@ -230,7 +231,7 @@ then you can understand how the playbook works:
         ```
     * then restarts the containerd
 9. Ensure **CRI is enabled**
-10. configures the crictl conf file `/etc/crictl.yaml` with perms `0644` with content:
+10. **configures the crictl** conf file `/etc/crictl.yaml` with perms `0644` with content:
     ```
     runtime-endpoint: unix:///run/containerd/containerd.sock
     image-endpoint: unix:///run/containerd/containerd.sock
@@ -280,15 +281,107 @@ then you can understand how the playbook works:
 * kubelet --> `https://dl.k8s.io/v1.36.2/bin/linux/amd64/kubelet`
 * kubeadm --> `https://dl.k8s.io/v1.36.2/bin/linux/amd64/kubeadm`
 * kubectl --> `https://dl.k8s.io/v1.36.2/bin/linux/amd64/kubectl`
+
 ---
 
-## 
+## download all k8s necessary component images as tar files and import them
+
+1. I will download the initial k8s needed images by a script which first use ctr to pull and then export images to a tar file. I will run this on cp-1 node.<br>
+you can check out these initial images by:
+    ```
+    kubeadm config images list --kubernetes-version=v1.36.2
+    ```
+
+2. then use ansible to copy image tar files to all nodes (copy all images incase I want to turn a worker to control plane later; plus these images are light weight).
+
+3. crate a script file to import all image tar files on each node.
+
+4. instead of running import script manually on each node I use another anisble playbook to run the import script and import the image tar files to containerd on each node.
+
+> [!Caution]
+> these images must be imported to k8s.io namespace which will be done later steps sequence.
+
+> [!TIP]
+> `ctr` tool is available through `containerd-2.3.4-linux-amd64.tar.gz` package bundle I have installed.
+
+> [!Important]
+> I used this structre of files
+> ``` 
+> ansible-plays/
+> ├── inventory.ini
+> │
+> ├── k8s-images/
+> |   └── kubeadm  
+> │       ├── download-k8s-images.sh
+> |       ├── import-k8s-images.sh    
+> │       ├── images.txt
+> │       └── tar/
+> │           ├── kube-apiserver-v1.36.2.tar
+> │           ├── kube-controller-manager-v1.36.2.tar
+> │           ├── kube-scheduler-v1.36.2.tar
+> │           ├── kube-proxy-v1.36.2.tar
+> │           ├── pause-*.tar
+> │           ├── etcd-*.tar
+> │           └── coredns-*.tar
+> │
+> └── ansible/
+>     ├── k8s-distribute-images.yml
+>     └── import-k8s-images.yml
+> ```
+
+
+#### first is the script that downloads k8s images
+download this script file [download-k8s-images.sh](https://github.com/Parsa-19/8-Apex/blob/sherkat/scripts/download-k8s-images.sh).
+
+give it the execute perm and run:
+```
+$ chmod +x download-k8s-images.sh
+$ ./download-k8s-images.sh
+```
+this pulles images to k8s.io namespace in cp-1 (where you had ran this script on) and exports the image files to tar files to import them in rest of control planes.<br>
+this also write image names that have been pulled and downloaded to a new file in the same dir named `images.txt`.
+ 
+#### writing an ansible-playbook to distribute image files
+download ansible-playbook file [k8s-distribute-images.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/k8s-distribute-images.yml).
+
+run the playbook from cp-1:
+```
+$ ansible-playbook -i inventory.ini k8s-images.yml
+```
+
+#### create another script file to import tar images
+download the script file [import-k8s-images.sh](https://github.com/Parsa-19/8-Apex/blob/sherkat/scripts/import-k8s-images.sh).
+
+give it exec permissions:
+```
+$ chmod +x import-k8s-images.sh
+```
+
+*it will be used in another ansible playbook to be copied and run on all cluster nodes*.
+
+#### create ansible playbook to run import script on all cluster nodes
+download the file [import-k8s-images.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/import-k8s-images.yml).
+
+run the playbook:
+```
+$ ansible-playbook -i inventory.ini import-k8s-images.yml
+```
+
+after all you can verify the image importing on all nodes by listing them:
+```
+$ crictl images
+```
 
 
 
 
 
-### sources
+
+
+
+
+
+## sources/guides
 - `https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/`
 - `https://pro.tecmint.com/blog/deploy-kubernetes-cluster-kubeadm-rocky-linux/`
 - `https://www.digitalocean.com/community/tutorials/how-to-create-a-kubernetes-cluster-using-kubeadm-on-centos-7`
