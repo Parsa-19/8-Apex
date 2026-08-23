@@ -294,18 +294,18 @@ you can check out these initial images by:
 
 2. then use ansible to copy image tar files to all nodes (copy all images incase I want to turn a worker to control plane later; plus these images are light weight).
 
-3. crate a script file to import all image tar files on each node.
+3. create a script file to import all image tar files on each node.
 
 4. instead of running import script manually on each node I use another anisble playbook to run the import script and import the image tar files to containerd on each node.
 
 > [!Caution]
-> these images must be imported to k8s.io namespace which will be done later steps sequence.
+> these images must be imported to k8s.io namespace which will be done in later steps sequence.
 
 > [!TIP]
 > `ctr` tool is available through `containerd-2.3.4-linux-amd64.tar.gz` package bundle I have installed.
 
 > [!Important]
-> I used this structre of files
+> I used this structure of files
 > ``` 
 > ansible-plays/
 > ├── inventory.ini
