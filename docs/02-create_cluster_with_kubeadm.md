@@ -184,7 +184,7 @@ to understand the playbook first consider the working dir which is used to insta
 
 I am going to create this file-structure-diagram hierarchy here and also complete it later steps.
 
-<img src="../diagrams/file-structure-diagram.png" alt="Kubernetes project file structure diagram" width="800">
+<img src="../diagrams/file-structure-diagram.png" alt="Kubernetes project file structure diagram" width="600">
 
 now you can understand how the playbook works:
 #### first playbook named `Install Kubernetes dependencies` on all k8s nodes:
