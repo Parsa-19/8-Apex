@@ -1,11 +1,11 @@
-### prerequisites on each node:
+## prerequisites on each node:
 * 2 GB or more of RAM
 * 2 CPUs or more
 * Unique hostname, MAC address, and product_uuid for every node
  
 ---
 
-### verify MAC address and product_uuid
+## verify MAC address and product_uuid
 
 k8s use these values to identify each node in cluster.
 
@@ -26,7 +26,7 @@ each value has to be unique.
 
 ---
 
-### turn off swap on each node
+## turn off swap on each node
 
 remove swap partition and add its storage to lv root:
 ```
@@ -80,7 +80,7 @@ the check it again with the `grubby --info=ALL` command. they have to be gone by
 
 ---
 
-### configure ansible to run playbooks
+## configure ansible to run playbooks
 
 we manage and run ansible playbooks form `CP-1`.
 ```
@@ -136,91 +136,245 @@ this playbook will:
 
 ---
 
-### install kubeadm, kubelet, containerd and kubectl
+## install initial packages for the life
+specifically for my rocky v10.2 minimal I have litterally nothing in my OS so wrote a mini playbook to install packages (like tar, unzip, vim and etc...) on all nodes:
 
-create a file named `install-kubernetes-runtime-and-tools.yml` and put [this content]() in it. <br>
-create a folder named `templates` and inside that put this file with same name [containerd-config.toml.j2](). <br>
-then run the play book:
+[needed-initial-packages.yml](https://github.com/Parsa-19/8-Apex/blob/tuf/ansible/needed-initial-packages.yml)
+
+run to insatll:
 ```
-anisble-playbook -i inventory.ini install-kubernetes-runtime-and-tools.yml
+ansible-playbook -i inventory.ini needed-initial-packages.yml
 ```
-the playbook will do these:
 
-#### on worker and control-plane nodes
-installs:
-- containerd
-- runc
-- cni-plugins
-- crictl
-- kubeadm
-- kubelet
+---
 
-1. install containerd:
+## install kubelet, kubeadm and containerd on CPs and workers
+
+for that I downloaded each of the binary files and used an ansible playbook to install and configure them on dedicated nodes offline.
+
+use this playbook [install-kubernetes-runtime-and-tools.yml](https://github.com/Parsa-19/8-Apex/blob/tuf/ansible/install-kubernetes-runtime-and-tools.yml) and run it:
 ```
-$ tar Cxzvf /usr/local containerd-1.6.2-linux-amd64.tar.gz
-bin/
-bin/containerd-shim-runc-v2
-bin/containerd-shim
-bin/ctr
-bin/containerd-shim-runc-v1
-bin/containerd
-bin/containerd-stress
+$ ansible-playbook -i inventory.ini install-kubernetes-runtime-and-tools.yml
 ```
-2. download  https://raw.githubusercontent.com/containerd/containerd/main/containerd.service into `/usr/local/lib/systemd/system/containerd.service`
-and then
+
+that gives you a clean two-play playbook structure like this:
 ```
-systemctl daemon-reload
-systemctl enable --now containerd
+Play 1:
+  cp-1
+  cp-2
+  cp-3
+  node-1
+  node-2
+
+  - containerd
+  - runc
+  - CNI
+  - crictl
+  - kubelet
+  - kubeadm
+
+
+Play 2:
+  cp-1 only
+
+  - kubectl
 ```
-3. install runc:
+
+to understand the playbook first consider the working dir which is used to install the components like this:
 ```
-$ install -m 755 runc.amd64 /usr/local/sbin/runc
+ansible-plays/
+|
+├── container-runtime-bins
+│   ├── cni-plugins-linux-amd64-v1.9.1.tgz
+│   ├── containerd-2.3.4-linux-amd64.tar.gz
+│   ├── crictl-v1.36.0-linux-amd64.tar.gz
+│   └── runc.amd64
+|
+├── k8s-v1.36.2-bins
+|   |
+│   ├── kubeadm
+│   ├── kubectl
+│   └── kubelet
+|
+├── inventory.ini
+|
+├── k8s-dependencies.yml
+|
+├── install-kubernetes-runtime-and-tools.yml
+|
+├── needed-initial-packages.yml
+| 
+└── templates
+    └── containerd-config.toml.j2
+``` 
+then you can understand how the playbook works:
+#### first playbook named `Install Kubernetes dependencies` on all k8s nodes:
+1. first it configures variables about **versions, local downloaded bin file names, installation paths and temp dir** to be used inside the playbook itself.
+2. creates the basic directories:
+    * the temp folder that holds data whilte installing `/tmp/k8s-install`.
+    * containerd configuration dir `/etc/containerd`.
+    * installation dir for CNI plugins `/opt/cni/bin` (needed by containerd).
+    * CNI configuration directory `/etc/cni/net.d`.
+3. copies the **containerd** bin file to dedicated node with `0644` permissions and:
+    * install it by unarchiving it to `/usr/local`
+4. copies the **runc** bin file to dedicated node with `0755` permissions and:
+    * install it by copying it to `/usr/local/sbin/runc` and ensures the `0755` perms too.
+5. copies the **CNI plugins** bin file to dedicated node with `0644` permissions and:
+    * install it by unarchiving it to `/opt/cni/bin`.
+6. copies the **crictl** bin file to dedicated node with `0644` permissions and:
+    * install it by unarchiving it to `/usr/local/bin/crictl` and ensures the `0755` perms too.
+7. installs the **containerd systemd service** by:
+    * creating this dir `/usr/local/lib/systemd/system` with perm `0755`.
+    * and download the service file from `https://raw.githubusercontent.com/containerd/containerd/main/containerd.service`.
+    * and put the content in `/usr/local/lib/systemd/system/containerd.service` with perm `0644`.
+8. use prepared **containerd-config.toml** file as ansible template.
+    * copies it to `/etc/containerd/config.toml` with perms `0644`.
+    * this file is already configured with systemdCgroups (dedicated for containerd 2.x configurations):
+        ```
+        [plugins.'io.containerd.cri.v1.runtime'.containerd.runtimes.runc.options]
+        SystemdCgroup = true
+        ```
+    * then restarts the containerd
+9. Ensure **CRI is enabled**
+10. **configures the crictl** conf file `/etc/crictl.yaml` with perms `0644` with content:
+    ```
+    runtime-endpoint: unix:///run/containerd/containerd.sock
+    image-endpoint: unix:///run/containerd/containerd.sock
+    timeout: 10
+    debug: false    
+    ```
+11. after that all **reloads the systemd**.
+12. **enables and starts containerd service**.
+13. to install **kubelet** ansible copies the bin file to `/usr/local/bin/kubelet` with perms `0755`.
+14. to install **kubeadm** ansible copies the bin file to `/usr/local/bin/kubeadm` with perms `0755`.
+15. installs **kubelet service** by:
+    * creating service file in `/etc/systemd/system/kubelet.service` with perms `0644` with this content:
+        ```
+        [Unit]
+        Description=kubelet: The Kubernetes Node Agent
+        Documentation=https://kubernetes.io/docs/
+        Wants=network-online.target
+        After=network-online.target
+
+        [Service]
+        ExecStart=/usr/local/bin/kubelet
+        Restart=always
+        RestartSec=10
+        StartLimitIntervalSec=0
+
+        [Install]
+        WantedBy=multi-user.target
+        ```
+16. **reloads systemd**
+17. **enables kubelet**
+18. then there is bunch of tasks to get the version of each component and registers them in variables
+19. registers the **status of containerd**
+20. **displays all the versions** 
+21. at the end of first playbook there is restart contianerd handler that's been used in step 8.
+
+#### second playbook named `Install kubectl on cp-1` on cp-1:
+22. copies the **kubectl** bin file to `/usr/local/bin/kubectl` with perms `0755`.
+23. get **kubectl version** and registers the variable.
+24. **displays kubectl version**.
+
+#### download refrences:
+* containerd v2.3.4 --> `https://github.com/containerd/containerd/releases/download/v2.3.4/containerd-2.3.4-linux-amd64.tar.gz`
+* containerd.service file --> `https://raw.githubusercontent.com/containerd/containerd/main/containerd.service`
+* runc v1.5.1 --> `https://github.com/opencontainers/runc/releases/download/v1.5.1/runc.amd64`
+* CNI plugin v1.9.1 --> `https://github.com/containernetworking/plugins/releases/download/v1.9.1/cni-plugins-linux-amd64-v1.9.1.tgz`
+* crictl v1.36.0 --> `https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.36.0/crictl-v1.36.0-linux-amd64.tar.gz`
+* kubelet --> `https://dl.k8s.io/v1.36.2/bin/linux/amd64/kubelet`
+* kubeadm --> `https://dl.k8s.io/v1.36.2/bin/linux/amd64/kubeadm`
+* kubectl --> `https://dl.k8s.io/v1.36.2/bin/linux/amd64/kubectl`
+
+---
+
+## download all k8s necessary component images as tar files and import them
+
+1. I will download the initial k8s needed images by a script which first use ctr to pull and then export images to a tar file. I will run this on cp-1 node.<br>
+you can check out these initial images by:
+    ```
+    kubeadm config images list --kubernetes-version=v1.36.2
+    ```
+
+2. then use ansible to copy image tar files to all nodes (copy all images incase I want to turn a worker to control plane later; plus these images are light weight).
+
+3. create a script file to import all image tar files on each node.
+
+4. instead of running import script manually on each node I use another anisble playbook to run the import script and import the image tar files to containerd on each node.
+
+> [!Caution]
+> these images must be imported to k8s.io namespace which will be done in later steps sequence.
+
+> [!TIP]
+> `ctr` tool is available through `containerd-2.3.4-linux-amd64.tar.gz` package bundle I have installed.
+
+> [!Important]
+> I used this structure of files
+> ``` 
+> ansible-plays/
+> ├── inventory.ini
+> │
+> ├── k8s-images/
+> |   ├── download-k8s-images.sh
+> |   ├── import-k8s-images.sh
+> |   └── kubeadm-tar-images/
+> │       ├── images.txt
+> │       ├── kube-apiserver-v1.36.2.tar
+> │       ├── kube-controller-manager-v1.36.2.tar
+> │       ├── kube-scheduler-v1.36.2.tar
+> │       ├── kube-proxy-v1.36.2.tar
+> │       ├── pause-*.tar
+> │       ├── etcd-*.tar
+> │       └── coredns-*.tar
+> │
+> └── ansible/
+>     ├── k8s-distribute-images.yml
+>     └── import-k8s-images.yml
+> ```
+
+
+#### first is the script that downloads k8s images
+download this script file [download-k8s-images.sh](https://github.com/Parsa-19/8-Apex/blob/sherkat/scripts/download-k8s-images.sh).
+
+give it the execute perm and run:
 ```
-4. install cni-plugins:
+$ chmod +x download-k8s-images.sh
+$ ./download-k8s-images.sh
 ```
-$ mkdir -p /opt/cni/bin
-$ tar Cxzvf /opt/cni/bin cni-plugins-linux-amd64-v1.1.1.tgz
-./
-./macvlan
-./static
-./vlan
-./portmap
-./host-local
-./vrf
-./bridge
-./tuning
-./firewall
-./host-device
-./sbr
-./loopback
-./dhcp
-./ptp
-./ipvlan
-./bandwidth
+this pulles images to k8s.io namespace in cp-1 (where you had ran this script on) and exports the image files to tar files to import them in rest of control planes.<br>
+this also write image names that have been pulled and downloaded to a new file in the same dir named `images.txt`.
+ 
+#### writing an ansible-playbook to distribute image files
+download ansible-playbook file [k8s-distribute-images.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/k8s-distribute-images.yml).
+
+run the playbook from cp-1:
 ```
-5. setting up systemd cgroup for containerd(ansible used the template for config.toml)
-generate the default config file:
+$ ansible-playbook -i inventory.ini k8s-images.yml
 ```
-sudo mkdir -p /etc/containerd
-sudo containerd config default | sudo tee /etc/containerd/config.toml
+
+#### create another script file to import tar images
+download the script file [import-k8s-images.sh](https://github.com/Parsa-19/8-Apex/blob/sherkat/scripts/import-k8s-images.sh).
+
+give it exec permissions:
 ```
-set the systemd cgroup driver in `/etc/containerd/config.toml` by editing the parameter SystemdCgroup value and changing it from false to true:
+$ chmod +x import-k8s-images.sh
 ```
-vim /etc/containerd/config.toml
-    > search for SystemdCgroup
-    > change to true
+
+*it will be used in another ansible playbook to be copied and run on all cluster nodes*.
+
+#### create ansible playbook to run import script on all cluster nodes
+download the file [import-k8s-images.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/import-k8s-images.yml).
+
+run the playbook:
 ```
-after the change restart:
+$ ansible-playbook -i inventory.ini import-k8s-images.yml
 ```
-sudo systemctl restart containerd
-install crictl too
+
+after all you can verify the image importing on all nodes by listing them:
 ```
-6. install crictl and configure it with containerd
-7. install kubeadm 
-8. install kubelet and configure its service
-
-#### just on cp-1:
-just isntalls kubectl 
+$ crictl images
+```
 
 
 
@@ -231,13 +385,7 @@ just isntalls kubectl
 
 
 
-
-
-
-
-
-
-### sources
+## sources/guides
 - `https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/`
 - `https://pro.tecmint.com/blog/deploy-kubernetes-cluster-kubeadm-rocky-linux/`
 - `https://www.digitalocean.com/community/tutorials/how-to-create-a-kubernetes-cluster-using-kubeadm-on-centos-7`

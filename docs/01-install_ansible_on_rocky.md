@@ -8,7 +8,7 @@ pip install ansible
 
 create a ssh key pair for root user in `cp-1` where we want to run ansible-playbooks and control cluster. then copy the ssh pub key to all nodes:
 ```
-$ root@CP-1> ssk-keygen
+$ root@CP-1> ssh-keygen
 $ root@CP-1> ssh-copy-id parsa@192.168.16.118 (same CP-1)
 $ root@CP-1> ssh-copy-id parsa@192.168.16.119
 $ root@CP-1> ssh-copy-id parsa@192.168.16.120
@@ -20,7 +20,7 @@ $ root@CP-1> ssh-copy-id parsa@192.168.16.124
 
 same for user parsa on `cp-1`:
 ```
-$ parsa@CP-1> ssk-keygen
+$ parsa@CP-1> ssh-keygen
 $ parsa@CP-1> ssh-copy-id parsa@192.168.16.118 (same CP-1)
 $ parsa@CP-1> ssh-copy-id parsa@192.168.16.119
 $ parsa@CP-1> ssh-copy-id parsa@192.168.16.120
