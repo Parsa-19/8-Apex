@@ -308,7 +308,7 @@ download ansible-playbook file [k8s-distribute-images.yml](https://github.com/Pa
 
 run the playbook from cp-1:
 ```
-$ ansible-playbook -i inventory.ini k8s-images.yml
+$ ansible-playbook -i inventory.ini k8s-distribute-images.yml
 ```
 
 #### create another script file to import tar images
