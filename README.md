@@ -74,7 +74,7 @@ etcd architecture design is **stacked etcd topology** meaning that all etcd memb
                      ┌─────────────────────────────────────────┐
                      │ Kubernetes API Virtual IP (kube-vip)    │
                      │                                         │
-                     │ VIP: 10.0.0.100:6443                    │
+                     │ VIP: 192.168.55.100:6443                │
                      │                                         │
                      │ • Provides HA Virtual IP for Kubernetes │
                      │   API Server                            │
@@ -95,7 +95,7 @@ etcd architecture design is **stacked etcd topology** meaning that all etcd memb
         │                │       │                │       │                │
         │ kube-vip       │       │ kube-vip       │       │ kube-vip       │
         │ VIP:           │       │ VIP:           │       │ VIP:           │
-        │ 10.0.0.100     │       │ 10.0.0.100     │       │ 10.0.0.100     │
+        │ 192.168.55.100 │       │ 192.168.55.100 │       │ 192.168.55.100 │
         │ Active/Leader  │       │ Backup         │       │ Backup         │
         │                │       │                │       │                │
         │ API Server     │       │ API Server     │       │ API Server     │
@@ -144,7 +144,7 @@ etcd architecture design is **stacked etcd topology** meaning that all etcd memb
                                          │
                                       Clients
 ```
-there is **no dedicated Kubernetes API LB node** in this design. `kube-vip` runs directly on the control-plane nodes and provides the shared API VIP (`10.0.0.100`). The API traffic is therefore highly available across CP-1, CP-2 and CP-3 while etcd remains replicated across the three control planes.
+there is **no dedicated Kubernetes API LB node** in this design. `kube-vip` runs directly on the control-plane nodes and provides the shared API VIP (`192.168.55.100`). The API traffic is therefore highly available across CP-1, CP-2 and CP-3 while etcd remains replicated across the three control planes.
 
 there is also an external app `haproxy`/`nginx` loadbalancer which routes the traffic to worker nodes and application pods through `ingress controller`.
 

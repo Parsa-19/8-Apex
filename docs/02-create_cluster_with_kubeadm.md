@@ -334,6 +334,29 @@ after all you can verify the image importing on all nodes by listing them:
 $ crictl images
 ```
 
+---
+
+## init the cluster
+use cilium
+use kubeadm init cluster config
+use kubevip
+
+clean network design:
+```
+Node network:
+192.168.55.0/24
+
+Pod network:
+10.244.0.0/16
+
+Service network:
+10.96.0.0/12
+```
+
+get latest kubevip version and use the exact version in your commands:
+```
+echo "$(curl -sL https://api.github.com/repos/kube-vip/kube-vip/releases | jq -r ".[0].name")"
+```
 
 
 

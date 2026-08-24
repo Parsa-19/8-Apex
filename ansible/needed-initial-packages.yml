@@ -14,5 +14,6 @@
           - nano
           - wget
           - tree
+          - nc
         state: present
         update_cache: true
