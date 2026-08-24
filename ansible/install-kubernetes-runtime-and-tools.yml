@@ -3,6 +3,8 @@
   hosts: k8s_nodes
   become: true
   gather_facts: true
+  tags:
+    - binaries
 
   vars:
 
@@ -360,11 +362,11 @@
           - "kubeadm --> {{ kubeadm_version_result.stdout }}"
           - "containerd active: {{ containerd_service_status.status.ActiveState }}"
           - "containerd enabled: {{ containerd_service_status.status.UnitFileState }}"
-          
+
   # ================================================================
   # Handlers
   # ================================================================
-  
+
   handlers:
 
     - name: Restart containerd
@@ -380,13 +382,15 @@
 - name: Install kubectl on cp-1
   hosts: cp-1
   become: true
-  gather_facts: false
+  gather_facts: true
+  tags:
+    - kubectl
 
   tasks:
 
     - name: Copy kubectl binary
       ansible.builtin.copy:
-        src: "{{ playbook_dir | dirname }}/binaries/k8s-v1.36.2-bins/{{ kubectl_binary }}"
+        src: "{{ playbook_dir | dirname }}/binaries/k8s-v1.36.2-bins/kubectl"
         dest: "/usr/local/bin/kubectl"
         mode: "0755"
 
