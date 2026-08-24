@@ -11,8 +11,8 @@ K8S_VERSION="v1.36.2"
 CONTAINERD_NAMESPACE="k8s.io"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-IMAGE_DIR="${SCRIPT_DIR}/kubeadm/tar"
-IMAGE_LIST="${SCRIPT_DIR}/kubeadm/images.txt"
+IMAGE_DIR="${SCRIPT_DIR}/kubeadm-tar-images"
+IMAGE_LIST="${SCRIPT_DIR}/kubeadm-tar-images/images.txt"
 
 # Use the containerd 2.x ctr binary
 CTR="${CTR:-/usr/local/bin/ctr}"

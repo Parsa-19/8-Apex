@@ -89,8 +89,13 @@ $ mkdir ansible-plays
 
 create an `inventory.ini` file with the content from here [inventory.ini](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/inventory.ini):
 
-create another file named `k8s-dependencies.yml` to install and configure all dependencies: <br>
-this file is located in the same dir in this folder here ([k8s-dependencies.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/k8s-dependencies.yml)).
+first install required ansible collections:
+```
+$ ansible-galaxy collection install community.general
+$ ansible-galaxy collection install ansible.posix
+``` 
+
+create another file named `k8s-dependencies.yml` to install and configure all dependencies from this file ([k8s-dependencies.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/k8s-dependencies.yml)).
 
 run the playbook:
 ```
@@ -176,33 +181,12 @@ Play 2:
 ```
 
 to understand the playbook first consider the working dir which is used to install the components like this:
-```
-ansible-plays/
-|
-├── container-runtime-bins
-│   ├── cni-plugins-linux-amd64-v1.9.1.tgz
-│   ├── containerd-2.3.4-linux-amd64.tar.gz
-│   ├── crictl-v1.36.0-linux-amd64.tar.gz
-│   └── runc.amd64
-|
-├── k8s-v1.36.2-bins
-|   |
-│   ├── kubeadm
-│   ├── kubectl
-│   └── kubelet
-|
-├── inventory.ini
-|
-├── k8s-dependencies.yml
-|
-├── install-kubernetes-runtime-and-tools.yml
-|
-├── needed-initial-packages.yml
-| 
-└── templates
-    └── containerd-config.toml.j2
-``` 
-then you can understand how the playbook works:
+
+I am going to create this file-structure-diagram hierarchy here and also complete it in later steps.
+
+<img src="../diagrams/file-structure-diagram.png" alt="Kubernetes project file structure diagram" width="600">
+
+now you can understand how the playbook works:
 #### first playbook named `Install Kubernetes dependencies` on all k8s nodes:
 1. first it configures variables about **versions, local downloaded bin file names, installation paths and temp dir** to be used inside the playbook itself.
 2. creates the basic directories:
@@ -305,35 +289,13 @@ you can check out these initial images by:
 > `ctr` tool is available through `containerd-2.3.4-linux-amd64.tar.gz` package bundle I have installed.
 
 > [!Important]
-> I used this structure of files
-> ``` 
-> ansible-plays/
-> ├── inventory.ini
-> │
-> ├── k8s-images/
-> |   └── kubeadm  
-> │       ├── download-k8s-images.sh
-> |       ├── import-k8s-images.sh    
-> │       ├── images.txt
-> │       └── tar/
-> │           ├── kube-apiserver-v1.36.2.tar
-> │           ├── kube-controller-manager-v1.36.2.tar
-> │           ├── kube-scheduler-v1.36.2.tar
-> │           ├── kube-proxy-v1.36.2.tar
-> │           ├── pause-*.tar
-> │           ├── etcd-*.tar
-> │           └── coredns-*.tar
-> │
-> └── ansible/
->     ├── k8s-distribute-images.yml
->     └── import-k8s-images.yml
-> ```
-
+> as I explained in previous part the diagram file structure [file-structure-diagram.png](https://github.com/Parsa-19/8-Apex/blob/sherkat/diagrams/file-structure-diagram.png) which is the working directory I am going to complete the structure. so take a look at the diagram again and create files like that in your working directory.
+> and also in my case the root of my project is in `/root/8-Apex`.
 
 #### first is the script that downloads k8s images
-download this script file [download-k8s-images.sh](https://github.com/Parsa-19/8-Apex/blob/sherkat/scripts/download-k8s-images.sh).
+download this script file [download-k8s-images.sh](https://github.com/Parsa-19/8-Apex/blob/sherkat/scripts/download-k8s-images.sh) into `/root/8-Apex/k8s-images/download-k8s-images.sh`.
 
-give it the execute perm and run:
+give it the execute perm and run it:
 ```
 $ chmod +x download-k8s-images.sh
 $ ./download-k8s-images.sh
@@ -342,7 +304,7 @@ this pulles images to k8s.io namespace in cp-1 (where you had ran this script on
 this also write image names that have been pulled and downloaded to a new file in the same dir named `images.txt`.
  
 #### writing an ansible-playbook to distribute image files
-download ansible-playbook file [k8s-distribute-images.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/k8s-distribute-images.yml).
+download ansible-playbook file [k8s-distribute-images.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/k8s-distribute-images.yml) into `/root/8-Apex/ansible/k8s-distribute-images.yml`.
 
 run the playbook from cp-1:
 ```
@@ -350,7 +312,7 @@ $ ansible-playbook -i inventory.ini k8s-images.yml
 ```
 
 #### create another script file to import tar images
-download the script file [import-k8s-images.sh](https://github.com/Parsa-19/8-Apex/blob/sherkat/scripts/import-k8s-images.sh).
+download the script file [import-k8s-images.sh](https://github.com/Parsa-19/8-Apex/blob/sherkat/scripts/import-k8s-images.sh) into `/root/8-Apex/k8s-images/import-k8s-images.sh`.
 
 give it exec permissions:
 ```
@@ -360,7 +322,7 @@ $ chmod +x import-k8s-images.sh
 *it will be used in another ansible playbook to be copied and run on all cluster nodes*.
 
 #### create ansible playbook to run import script on all cluster nodes
-download the file [import-k8s-images.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/import-k8s-images.yml).
+download the file [import-k8s-images.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/import-k8s-images.yml) into `/root/8-Apex/ansible/import-k8s-images.yml`.
 
 run the playbook:
 ```

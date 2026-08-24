@@ -12,5 +12,7 @@
           - unzip
           - vim
           - nano
+          - wget
+          - tree
         state: present
         update_cache: true

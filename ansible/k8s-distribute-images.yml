@@ -5,7 +5,7 @@
   gather_facts: false
 
   vars:
-    image_source_dir: "{{ playbook_dir }}/k8s-images/kubeadm/tar"
+    image_source_dir:  "{{ playbook_dir | dirname }}/k8s-images/kubeadm-tar-images"
     image_dest_dir: "/var/lib/k8s-image-cache"
 
   tasks:
@@ -65,7 +65,7 @@
 
     - name: Copy kubeadm image list
       ansible.builtin.copy:
-        src: "{{ playbook_dir }}/k8s-images/kubeadm/images.txt"
+        src: "{{ playbook_dir | dirname }}/k8s-images/kubeadm-tar-images/images.txt"
         dest: "{{ image_dest_dir }}/images.txt"
         owner: root
         group: root

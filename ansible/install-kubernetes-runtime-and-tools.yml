@@ -83,7 +83,7 @@
 
     - name: Copy containerd archive to node
       ansible.builtin.copy:
-        src: "container-runtime-bins/{{ containerd_archive }}"
+        src: "{{ playbook_dir | dirname }}/binaries/container-runtime-bins/{{ containerd_archive }}"
         dest: "{{ temp_dir }}/{{ containerd_archive }}"
         mode: "0644"
 
@@ -99,7 +99,7 @@
 
     - name: Copy runc binary
       ansible.builtin.copy:
-        src: "container-runtime-bins/{{ runc_binary }}"
+        src: "{{ playbook_dir | dirname }}/binaries/container-runtime-bins/{{ runc_binary }}"
         dest: "{{ temp_dir }}/runc"
         mode: "0755"
 
@@ -116,7 +116,7 @@
 
     - name: Copy CNI plugins archive
       ansible.builtin.copy:
-        src: "container-runtime-bins/{{ cni_archive }}"
+        src: "{{ playbook_dir | dirname }}/binaries/container-runtime-bins/{{ cni_archive }}"
         dest: "{{ temp_dir }}/{{ cni_archive }}"
         mode: "0644"
 
@@ -132,7 +132,7 @@
 
     - name: Copy crictl archive
       ansible.builtin.copy:
-        src: "container-runtime-bins/{{ crictl_archive }}"
+        src: "{{ playbook_dir | dirname }}/binaries/container-runtime-bins/{{ crictl_archive }}"
         dest: "{{ temp_dir }}/{{ crictl_archive }}"
         mode: "0644"
 
@@ -259,7 +259,7 @@
 
     - name: Copy kubelet binary
       ansible.builtin.copy:
-        src: "k8s-v1.36.2-bins/{{ kubelet_binary }}"
+        src: "{{ playbook_dir | dirname }}/binaries/k8s-v1.36.2-bins/{{ kubelet_binary }}"
         dest: "/usr/local/bin/kubelet"
         mode: "0755"
 
@@ -269,7 +269,7 @@
 
     - name: Copy kubeadm binary
       ansible.builtin.copy:
-        src: "k8s-v1.36.2-bins/{{ kubeadm_binary }}"
+        src: "{{ playbook_dir | dirname }}/binaries/k8s-v1.36.2-bins/{{ kubeadm_binary }}"
         dest: "/usr/local/bin/kubeadm"
         mode: "0755"
 
@@ -386,7 +386,7 @@
 
     - name: Copy kubectl binary
       ansible.builtin.copy:
-        src: "k8s-v1.36.2-bins/kubectl"
+        src: "{{ playbook_dir | dirname }}/binaries/k8s-v1.36.2-bins/{{ kubectl_binary }}"
         dest: "/usr/local/bin/kubectl"
         mode: "0755"
 
@@ -399,3 +399,4 @@
     - name: Display kubectl version
       ansible.builtin.debug:
         var: kubectl_version_result.stdout
+

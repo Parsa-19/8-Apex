@@ -16,7 +16,7 @@
 
     - name: Install image import script
       ansible.builtin.copy:
-        src: "{{ playbook_dir }}/k8s-images/kubeadm/import-k8s-images.sh"
+        src: "{{ playbook_dir | dirname }}/k8s-images/import-k8s-images.sh"
         dest: "{{ import_script }}"
         owner: root
         group: root
