@@ -341,6 +341,10 @@ use cilium
 use kubeadm init cluster config
 use kubevip
 
+
+important fixes:
+- kubelet service file 
+
 clean network design:
 ```
 Node network:
@@ -358,10 +362,23 @@ get latest kubevip version and use the exact version in your commands:
 echo "$(curl -sL https://api.github.com/repos/kube-vip/kube-vip/releases | jq -r ".[0].name")"
 ```
 
+this alias:
+```
+alias kube-vip="ctr image pull ghcr.io/kube-vip/kube-vip:v1.2.3; ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:v1.2.3 vip /kube-vip"
+```
 
+kube-vip v1.2.3 manifest by these commands:
+```
+$ export VIP=192.168.55.100
+$ export INTERFACE=enp0s8
+$ export KVVERSION=v1.2.3
 
+$ alias kube-vip="ctr image pull ghcr.io/kube-vip/kube-vip:$KVVERSION; ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:$KVVERSION vip /kube-vip"
 
+$ kube-vip manifest pod     --interface $INTERFACE     --address $VIP   
+```
 
+prepare kubeadm-init.yml config file and init the cluster
 
 
 
