@@ -387,3 +387,4 @@ prepare kubeadm-init.yml config file and init the cluster
 - `https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/`
 - `https://pro.tecmint.com/blog/deploy-kubernetes-cluster-kubeadm-rocky-linux/`
 - `https://www.digitalocean.com/community/tutorials/how-to-create-a-kubernetes-cluster-using-kubeadm-on-centos-7`
+- `https://github.com/kubernetes/kubeadm/blob/main/docs/ha-considerations.md#options-for-software-load-balancing`
