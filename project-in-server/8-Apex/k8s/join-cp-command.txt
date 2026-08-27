@@ -1,0 +1,7 @@
+kubeadm join 192.168.55.100:6443 \
+  --token 9n35xw.d55tqyqgja6xeugi \
+  --discovery-token-ca-cert-hash sha256:692d23464d44122a9007ef1bd97322238e5dfaa4b77c4f5fa069c170f63dcfcf \
+  --control-plane \
+  --certificate-key ffdbeb61d9f242308c13afe402215a16e317574ac13040699259d6227e173a0f \
+  --apiserver-advertise-address 192.168.55.119 \
+  --cri-socket unix:///run/containerd/containerd.sock

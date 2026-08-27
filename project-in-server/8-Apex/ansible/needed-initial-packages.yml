@@ -1,0 +1,18 @@
+---
+- name: Manage DNF packages on target hosts
+  hosts: all
+  become: true  # Required to gain root privileges for installation
+
+  tasks:
+    - name: Update the DNF cache and install packages
+      ansible.builtin.dnf:
+        name: 
+          - tmux
+          - tar
+          - unzip
+          - vim
+          - nano
+          - wget
+          - tree
+        state: present
+        update_cache: true

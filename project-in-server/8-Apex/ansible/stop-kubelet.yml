@@ -1,0 +1,13 @@
+---
+- name: Stop Kubelet and Reload Systemd
+  hosts: k8s_nodes
+  become: yes
+  tasks:
+    - name: Stop kubelet service
+      ansible.builtin.service:
+        name: kubelet
+        state: stopped
+
+    - name: Run systemctl daemon-reload
+      ansible.builtin.systemd:
+        daemon_reload: yes

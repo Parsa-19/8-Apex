@@ -1,0 +1,57 @@
+---
+- name: Import Kubernetes offline images into containerd
+  hosts: k8s_nodes
+  become: true
+  gather_facts: false
+
+  vars:
+    image_dest_dir: "/var/lib/k8s-image-cache"
+    import_script: "/usr/local/sbin/import-k8s-images.sh"
+
+  tasks:
+
+    # ============================================================
+    # Install import script
+    # ============================================================
+
+    - name: Install image import script
+      ansible.builtin.copy:
+        src: "{{ playbook_dir | dirname }}/k8s-images/import-k8s-images.sh"
+        dest: "{{ import_script }}"
+        owner: root
+        group: root
+        mode: "0755"
+
+    # ============================================================
+    # Verify containerd
+    # ============================================================
+
+    - name: Check containerd service
+      ansible.builtin.systemd:
+        name: containerd
+      register: containerd_status
+
+    - name: Fail if containerd is not running
+      ansible.builtin.fail:
+        msg: >
+          containerd is not running on {{ inventory_hostname }}.
+          Start containerd before importing images.
+      when: containerd_status.status.ActiveState != "active"
+
+    # ============================================================
+    # Import images
+    # ============================================================
+
+    - name: Import Kubernetes images
+      ansible.builtin.command:
+        cmd: "{{ import_script }}"
+      register: image_import_result
+      changed_when: true
+
+    # ============================================================
+    # Display output
+    # ============================================================
+
+    - name: Display image import result
+      ansible.builtin.debug:
+        msg: "{{ image_import_result.stdout_lines }}"
