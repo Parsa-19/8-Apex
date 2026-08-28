@@ -395,6 +395,11 @@ Service network:
 10.96.0.0/12
 ```
 
+get latest kubevip version and use the exact version in your commands:
+```
+echo "$(curl -sL https://api.github.com/repos/kube-vip/kube-vip/releases | jq -r ".[0].name")"
+```
+
 kube-vip v1.2.3 manifest by these commands:
 ```
 $ export VIP=192.168.16.100

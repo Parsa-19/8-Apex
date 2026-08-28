@@ -1,0 +1,47 @@
+---
+- name: Install Cilium CLI on control-plane nodes
+  hosts: control-planes
+  become: true
+  gather_facts: false
+
+  vars:
+    cilium_cli_dir: "{{ playbook_dir }}/../binaries/cilium"
+    cilium_cli_archive: "cilium-linux-amd64.tar.gz"
+    cilium_cli_checksum: "cilium-linux-amd64.tar.gz.sha256sum"
+
+  tasks:
+
+    - name: Copy Cilium CLI archive to control-plane node
+      ansible.builtin.copy:
+        src: "{{ cilium_cli_dir }}/{{ cilium_cli_archive }}"
+        dest: "/tmp/{{ cilium_cli_archive }}"
+        mode: "0644"
+
+    - name: Copy Cilium CLI checksum to control-plane node
+      ansible.builtin.copy:
+        src: "{{ cilium_cli_dir }}/{{ cilium_cli_checksum }}"
+        dest: "/tmp/{{ cilium_cli_checksum }}"
+        mode: "0644"
+
+    - name: Verify Cilium CLI checksum
+      ansible.builtin.command:
+        cmd: "sha256sum --check {{ cilium_cli_checksum }}"
+        chdir: /tmp
+      changed_when: false
+
+    - name: Extract Cilium CLI to /usr/local/bin
+      ansible.builtin.unarchive:
+        src: "/tmp/{{ cilium_cli_archive }}"
+        dest: "/usr/local/bin"
+        remote_src: true
+        mode: "0755"
+
+    - name: Remove Cilium CLI archive
+      ansible.builtin.file:
+        path: "/tmp/{{ cilium_cli_archive }}"
+        state: absent
+
+    - name: Remove Cilium CLI checksum
+      ansible.builtin.file:
+        path: "/tmp/{{ cilium_cli_checksum }}"
+        state: absent
