@@ -74,7 +74,7 @@ etcd architecture design is **stacked etcd topology** meaning that all etcd memb
                       ┌─────────────────────────────────────────┐
                       │ Kubernetes API Virtual IP (kube-vip)    │
                       │                                         │
-                      │ VIP: 10.0.0.100:6443                    │
+                      │ VIP: 192.168.16.100:6443                │
                       │                                         │
                       │ • Provides HA Virtual IP for Kubernetes │
                       │   API Server                            │
@@ -95,7 +95,7 @@ etcd architecture design is **stacked etcd topology** meaning that all etcd memb
          │                │       │                │       │                │
          │ kube-vip       │       │ kube-vip       │       │ kube-vip       │
          │ VIP:           │       │ VIP:           │       │ VIP:           │
-         │ 10.0.0.100     │       │ 10.0.0.100     │       │ 10.0.0.100     │
+         │ 192.168.16.100 │       │ 192.168.16.100 │       │ 192.168.16.100 │
          │ Active/Leader  │       │ Backup         │       │ Backup         │
          │                │       │                │       │                │
          │ API Server     │       │ API Server     │       │ API Server     │
