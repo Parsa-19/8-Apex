@@ -1,0 +1,22 @@
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: JoinConfiguration
+
+controlPlane:
+  localAPIEndpoint:
+    advertiseAddress: "192.168.55.119"
+    bindPort: 6443
+  certificateKey: "ca4a241b63338707a6a16de20bc4179549086c37ac0b95c46c00ce0a5fe6d163"
+
+
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: "192.168.55.100:6443"
+    token: "6ohvt8.h526v9lkl0606tp0"
+    caCertHashes:
+      - "sha256:692d23464d44122a9007ef1bd97322238e5dfaa4b77c4f5fa069c170f63dcfcf"
+
+nodeRegistration:
+  criSocket: unix:///run/containerd/containerd.sock
+  kubeletExtraArgs:
+    - name: "node-ip"
+      value: "192.168.55.119"
