@@ -1,0 +1,392 @@
+---
+- name: Install Kubernetes dependencies
+  hosts: k8s_nodes
+  become: true
+  gather_facts: true
+  tags:
+    - binaries
+
+  vars:
+
+    # ============================================================
+    # Versions
+    # ============================================================
+
+    containerd_version: "2.3.4"
+    kubernetes_version: "1.36.2"
+    cni_version: "1.9.1"
+    crictl_version: "1.36.0"
+
+    # ============================================================
+    # Local files
+    # ============================================================
+
+    containerd_archive: "containerd-2.3.4-linux-amd64.tar.gz"
+    runc_binary: "runc.amd64"
+    cni_archive: "cni-plugins-linux-amd64-v1.9.1.tgz"
+    crictl_archive: "crictl-v1.36.0-linux-amd64.tar.gz"
+
+    kubelet_binary: "kubelet"
+    kubeadm_binary: "kubeadm"
+    kubectl_binary: "kubectl"
+
+    # ============================================================
+    # Installation paths
+    # ============================================================
+
+    containerd_bin_dir: "/usr/local/bin"
+    runc_bin_dir: "/usr/local/sbin"
+    cni_bin_dir: "/opt/cni/bin"
+
+    containerd_config_dir: "/etc/containerd"
+    containerd_config_file: "/etc/containerd/config.toml"
+
+    crictl_config_file: "/etc/crictl.yaml"
+
+    # ============================================================
+    # Temporary directory
+    # ============================================================
+
+    temp_dir: "/tmp/k8s-install"
+
+  tasks:
+
+    # ============================================================
+    # Basic directories
+    # ============================================================
+
+    - name: Create temporary installation directory
+      ansible.builtin.file:
+        path: "{{ temp_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Create containerd configuration directory
+      ansible.builtin.file:
+        path: "{{ containerd_config_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Create CNI binary directory
+      ansible.builtin.file:
+        path: "{{ cni_bin_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Create CNI configuration directory
+      ansible.builtin.file:
+        path: "/etc/cni/net.d"
+        state: directory
+        mode: "0755"
+
+    # ============================================================
+    # Copy containerd
+    # ============================================================
+
+    - name: Copy containerd archive to node
+      ansible.builtin.copy:
+        src: "{{ playbook_dir | dirname }}/binaries/container-runtime-bins/{{ containerd_archive }}"
+        dest: "{{ temp_dir }}/{{ containerd_archive }}"
+        mode: "0644"
+
+    - name: Extract containerd
+      ansible.builtin.unarchive:
+        src: "{{ temp_dir }}/{{ containerd_archive }}"
+        dest: "/usr/local"
+        remote_src: true
+
+    # ============================================================
+    # Install runc
+    # ============================================================
+
+    - name: Copy runc binary
+      ansible.builtin.copy:
+        src: "{{ playbook_dir | dirname }}/binaries/container-runtime-bins/{{ runc_binary }}"
+        dest: "{{ temp_dir }}/runc"
+        mode: "0755"
+
+    - name: Install runc
+      ansible.builtin.copy:
+        src: "{{ temp_dir }}/runc"
+        dest: "{{ runc_bin_dir }}/runc"
+        remote_src: true
+        mode: "0755"
+
+    # ============================================================
+    # Install CNI plugins
+    # ============================================================
+
+    - name: Copy CNI plugins archive
+      ansible.builtin.copy:
+        src: "{{ playbook_dir | dirname }}/binaries/container-runtime-bins/{{ cni_archive }}"
+        dest: "{{ temp_dir }}/{{ cni_archive }}"
+        mode: "0644"
+
+    - name: Extract CNI plugins
+      ansible.builtin.unarchive:
+        src: "{{ temp_dir }}/{{ cni_archive }}"
+        dest: "{{ cni_bin_dir }}"
+        remote_src: true
+
+    # ============================================================
+    # Install crictl
+    # ============================================================
+
+    - name: Copy crictl archive
+      ansible.builtin.copy:
+        src: "{{ playbook_dir | dirname }}/binaries/container-runtime-bins/{{ crictl_archive }}"
+        dest: "{{ temp_dir }}/{{ crictl_archive }}"
+        mode: "0644"
+
+    - name: Extract crictl
+      ansible.builtin.unarchive:
+        src: "{{ temp_dir }}/{{ crictl_archive }}"
+        dest: "/usr/local/bin"
+        remote_src: true
+
+    - name: Set crictl permissions
+      ansible.builtin.file:
+        path: "/usr/local/bin/crictl"
+        mode: "0755"
+
+    # ============================================================
+    # Install containerd systemd service
+    # ============================================================
+
+    - name: Create systemd directory for containerd
+      ansible.builtin.file:
+        path: "/usr/local/lib/systemd/system"
+        state: directory
+        mode: "0755"
+
+    - name: Install containerd systemd service
+      ansible.builtin.get_url:
+        url: "https://raw.githubusercontent.com/containerd/containerd/main/containerd.service"
+        dest: "/usr/local/lib/systemd/system/containerd.service"
+        mode: "0644"
+
+    # # ============================================================
+    # # Generate containerd configuration
+    # # ============================================================
+
+    # - name: Check whether containerd configuration exists
+    #   ansible.builtin.stat:
+    #     path: "{{ containerd_config_file }}"
+    #   register: containerd_config
+
+    # - name: Generate default containerd configuration
+    #   ansible.builtin.shell:
+    #     cmd: "/usr/local/bin/containerd config default > {{ containerd_config_file }}"
+    #   when: not containerd_config.stat.exists
+    #   changed_when: true
+
+    # # ============================================================
+    # # Configure containerd 2.x systemd cgroup
+    # # ============================================================
+
+    # - name: Configure containerd to use systemd cgroups
+    #   ansible.builtin.blockinfile:
+    #     path: "{{ containerd_config_file }}"
+    #     marker: "# {mark} ANSIBLE KUBERNETES CGROUP CONFIGURATION"
+    #     insertafter: '^version = 3'
+    #     block: |
+    #       [plugins.'io.containerd.cri.v1.runtime'.containerd.runtimes.runc.options]
+    #         SystemdCgroup = true
+    #   notify: Restart containerd
+
+    # ============================================================
+    # use the template to configure containerd with SystemdCgroup: true
+    # ============================================================
+
+    - name: Configure containerd
+      ansible.builtin.template:
+        src: "templates/containerd-config.toml.j2"
+        dest: "/etc/containerd/config.toml"
+        mode: "0644"
+      notify: Restart containerd
+
+    # ============================================================
+    # Ensure CRI is enabled
+    # ============================================================
+
+    - name: Check for disabled CRI plugin
+      ansible.builtin.shell:
+        cmd: "grep -E '^disabled_plugins' {{ containerd_config_file }} || true"
+      register: disabled_plugins
+      changed_when: false
+
+    - name: Fail if CRI is explicitly disabled
+      ansible.builtin.fail:
+        msg: >-
+          CRI appears to be disabled in {{ containerd_config_file }}.
+          Remove 'cri' from disabled_plugins before using containerd with Kubernetes.
+      when:
+        - "'cri' in disabled_plugins.stdout"
+
+    # ============================================================
+    # Configure crictl
+    # ============================================================
+
+    - name: Configure crictl to use containerd
+      ansible.builtin.copy:
+        dest: "{{ crictl_config_file }}"
+        mode: "0644"
+        content: |
+          runtime-endpoint: unix:///run/containerd/containerd.sock
+          image-endpoint: unix:///run/containerd/containerd.sock
+          timeout: 10
+          debug: false
+
+    # ============================================================
+    # Reload systemd
+    # ============================================================
+
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    # ============================================================
+    # Enable and start containerd
+    # ============================================================
+
+    - name: Enable and start containerd
+      ansible.builtin.systemd:
+        name: containerd
+        enabled: true
+        state: started
+
+    # ============================================================
+    # Install kubelet
+    # ============================================================
+
+    - name: Copy kubelet binary
+      ansible.builtin.copy:
+        src: "{{ playbook_dir | dirname }}/binaries/k8s-v1.36.2-bins/{{ kubelet_binary }}"
+        dest: "/usr/local/bin/kubelet"
+        mode: "0755"
+
+    # ============================================================
+    # Install kubeadm
+    # ============================================================
+
+    - name: Copy kubeadm binary
+      ansible.builtin.copy:
+        src: "{{ playbook_dir | dirname }}/binaries/k8s-v1.36.2-bins/{{ kubeadm_binary }}"
+        dest: "/usr/local/bin/kubeadm"
+        mode: "0755"
+
+    # ============================================================
+    # Install kubelet systemd service
+    # ============================================================
+
+    - name: Install kubelet systemd service
+      ansible.builtin.copy:
+        src: "{{ playbook_dir | dirname }}/k8s/kubelet.service"
+        dest: "/etc/systemd/system/kubelet.service"
+        mode: "0644"
+        
+    - name: Reload systemd after kubelet installation
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Enable kubelet
+      ansible.builtin.systemd:
+        name: kubelet
+        enabled: true
+
+    # ============================================================
+    # Verify containerd
+    # ============================================================
+
+    - name: Get containerd version
+      ansible.builtin.command:
+        cmd: /usr/local/bin/containerd --version
+      register: containerd_version_result
+      changed_when: false
+
+    - name: Get runc version
+      ansible.builtin.command:
+        cmd: /usr/local/sbin/runc --version
+      register: runc_version_result
+      changed_when: false
+
+    - name: Get crictl version
+      ansible.builtin.command:
+        cmd: /usr/local/bin/crictl --version
+      register: crictl_version_result
+      changed_when: false
+
+    - name: Get kubelet version
+      ansible.builtin.command:
+        cmd: /usr/local/bin/kubelet --version
+      register: kubelet_version_result
+      changed_when: false
+
+    - name: Get kubeadm version
+      ansible.builtin.command:
+        cmd: /usr/local/bin/kubeadm version -o short
+      register: kubeadm_version_result
+      changed_when: false
+
+    # ============================================================
+    # Verify containerd service
+    # ============================================================
+
+    - name: Check containerd service
+      ansible.builtin.systemd:
+        name: containerd
+      register: containerd_service_status
+
+    - name: Display installed versions
+      ansible.builtin.debug:
+        msg:
+          - "===== {{ inventory_hostname }} ====="
+          - "{{ containerd_version_result.stdout }}"
+          - "{{ runc_version_result.stdout_lines[0] }}"
+          - "{{ crictl_version_result.stdout }}"
+          - "kubelet --> {{ kubelet_version_result.stdout }}"
+          - "kubeadm --> {{ kubeadm_version_result.stdout }}"
+          - "containerd active: {{ containerd_service_status.status.ActiveState }}"
+          - "containerd enabled: {{ containerd_service_status.status.UnitFileState }}"
+
+  # ================================================================
+  # Handlers
+  # ================================================================
+
+  handlers:
+
+    - name: Restart containerd
+      ansible.builtin.systemd:
+        name: containerd
+        state: restarted
+        daemon_reload: true
+
+# ================================================================
+# kubectl ONLY on cp-1
+# ================================================================
+
+- name: Install kubectl on cp-1
+  hosts: cp-1
+  become: true
+  gather_facts: true
+  tags:
+    - kubectl
+
+  tasks:
+
+    - name: Copy kubectl binary
+      ansible.builtin.copy:
+        src: "{{ playbook_dir | dirname }}/binaries/k8s-v1.36.2-bins/kubectl"
+        dest: "/usr/local/bin/kubectl"
+        mode: "0755"
+
+    - name: Get kubectl version
+      ansible.builtin.command:
+        cmd: /usr/local/bin/kubectl version --client
+      register: kubectl_version_result
+      changed_when: false
+
+    - name: Display kubectl version
+      ansible.builtin.debug:
+        var: kubectl_version_result.stdout
+

@@ -281,24 +281,10 @@
 
     - name: Install kubelet systemd service
       ansible.builtin.copy:
+        src: "{{ playbook_dir | dirname }}/k8s/kubelet.service"
         dest: "/etc/systemd/system/kubelet.service"
         mode: "0644"
-        content: |
-          [Unit]
-          Description=kubelet: The Kubernetes Node Agent
-          Documentation=https://kubernetes.io/docs/
-          Wants=network-online.target
-          After=network-online.target
-
-          [Service]
-          ExecStart=/usr/local/bin/kubelet
-          Restart=always
-          RestartSec=10
-          StartLimitIntervalSec=0
-
-          [Install]
-          WantedBy=multi-user.target
-
+        
     - name: Reload systemd after kubelet installation
       ansible.builtin.systemd:
         daemon_reload: true

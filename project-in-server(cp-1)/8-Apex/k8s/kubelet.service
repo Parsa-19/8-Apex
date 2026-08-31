@@ -1,0 +1,48 @@
+[Unit]
+Description=kubelet: The Kubernetes Node Agent
+Documentation=https://kubernetes.io/docs/
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/kubelet
+Restart=always
+RestartSec=10
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=multi-user.target
+
+
+[Unit]
+Description=kubelet: The Kubernetes Node Agent
+Documentation=https://kubernetes.io/docs/home/
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/kubelet
+Restart=always
+RestartSec=10
+StartLimitIntervalSec=0
+
+# Allow kubelet to manage cgroups created by the container runtime.
+Delegate=yes
+
+# kubeadm creates these files during "kubeadm join".
+Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
+Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
+
+# kubeadm-generated per-node arguments.
+EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
+
+# Optional administrator overrides.
+EnvironmentFile=-/etc/default/kubelet
+
+# Replace the ExecStart above with the complete command including
+# the environment variables.
+ExecStart=
+ExecStart=/usr/local/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
+
+[Install]
+WantedBy=multi-user.target

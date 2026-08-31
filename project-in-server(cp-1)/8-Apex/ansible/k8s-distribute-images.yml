@@ -1,0 +1,90 @@
+---
+- name: Distribute Kubernetes offline images
+  hosts: k8s_nodes
+  become: true
+  gather_facts: false
+
+  vars:
+    image_source_dir:  "{{ playbook_dir | dirname }}/k8s-images/kubeadm-tar-images"
+    image_dest_dir: "/var/lib/k8s-image-cache"
+
+  tasks:
+
+    # ============================================================
+    # Create image cache directory
+    # ============================================================
+
+    - name: Create image cache directory
+      ansible.builtin.file:
+        path: "{{ image_dest_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    # ============================================================
+    # Find local image tar files
+    # ============================================================
+
+    - name: Find Kubernetes image tar files
+      ansible.builtin.find:
+        paths: "{{ image_source_dir }}"
+        patterns:
+          - "*.tar"
+        file_type: file
+      delegate_to: localhost
+      become: false
+      register: image_tar_files
+
+    - name: Fail if no image tar files exist
+      ansible.builtin.fail:
+        msg: >
+          No Kubernetes image tar files were found in
+          {{ image_source_dir }}.
+          Run k8s-images/download-k8s-images.sh first.
+      when: image_tar_files.files | length == 0
+
+    # ============================================================
+    # Copy images to node
+    # ============================================================
+
+    - name: Copy Kubernetes image tar files
+      ansible.builtin.copy:
+        src: "{{ item.path }}"
+        dest: "{{ image_dest_dir }}/{{ item.path | basename }}"
+        owner: root
+        group: root
+        mode: "0644"
+      loop: "{{ image_tar_files.files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+
+    # ============================================================
+    # Copy image list
+    # ============================================================
+
+    - name: Copy kubeadm image list
+      ansible.builtin.copy:
+        src: "{{ playbook_dir | dirname }}/k8s-images/kubeadm-tar-images/images.txt"
+        dest: "{{ image_dest_dir }}/images.txt"
+        owner: root
+        group: root
+        mode: "0644"
+
+    # ============================================================
+    # Display result
+    # ============================================================
+
+    - name: List copied image files
+      ansible.builtin.find:
+        paths: "{{ image_dest_dir }}"
+        patterns: "*.tar"
+        file_type: file
+      register: copied_images
+
+    - name: Display copied image files
+      ansible.builtin.debug:
+        msg:
+          - "Node: {{ inventory_hostname }}"
+          - "Images copied: {{ copied_images.files | length }}"
+          - "Destination: {{ image_dest_dir }}"

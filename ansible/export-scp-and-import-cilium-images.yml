@@ -1,0 +1,45 @@
+---
+- name: Export Cilium images on CP-1 and import them on a target node
+  hosts: cp-1
+  become: true
+  vars:
+    target_node: "node-1"
+    image_bundle: "/tmp/cilium-images.tar"
+
+    cilium_images:
+      - "quay.io/cilium/cilium@sha256:ae9ea21f7427fe24bc6ea7247eb552157a1b0a431744045d3f641545ca71d11b"
+      - "quay.io/cilium/cilium-envoy@sha256:75b8094c7127736a2ffd2dce3945e0931cb6df21b0372ff661940eca26730b91"
+      - "quay.io/cilium/operator-generic@sha256:6c3885fc7b629099fdbe2a5c87869c86feb825fa18fae299eac0f61918d16ecf"
+
+  tasks:
+    - name: Export Cilium images into a single tar
+      ansible.builtin.command:
+        cmd: >-
+          /usr/local/bin/ctr -n k8s.io images export
+          {{ image_bundle }}
+          {{ cilium_images | join(' ') }}
+      args:
+        creates: "{{ image_bundle }}"
+
+    - name: Copy image bundle to target node
+      ansible.builtin.copy:
+        src: "{{ image_bundle }}"
+        dest: "/tmp/cilium-images.tar"
+        mode: "0644"
+      delegate_to: "{{ target_node }}"
+
+    - name: Import Cilium images into k8s.io namespace
+      ansible.builtin.command:
+        cmd: /usr/local/bin/ctr -n k8s.io images import /tmp/cilium-images.tar
+      delegate_to: "{{ target_node }}"
+
+    - name: Verify Cilium images
+      ansible.builtin.command:
+        cmd: /usr/local/bin/ctr -n k8s.io images ls
+      register: cilium_images_check
+      delegate_to: "{{ target_node }}"
+      changed_when: false
+
+    - name: Show imported Cilium images
+      ansible.builtin.debug:
+        msg: "{{ cilium_images_check.stdout_lines | select('search', 'cilium') | list }}"
