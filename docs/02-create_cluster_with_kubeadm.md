@@ -143,7 +143,7 @@ specifically for my rocky v10.2 minimal I have litterally nothing in my OS so wr
 
 run to insatll:
 ```
-ansible-playbook -i inventory.ini needed-initial-packages.yml
+$ ansible-playbook -i inventory.ini needed-initial-packages.yml
 ```
 
 ---
@@ -190,7 +190,7 @@ now you can understand how the playbook works:
 #### first playbook named `Install Kubernetes dependencies` on all k8s nodes:
 1. first it configures variables about **versions, local downloaded bin file names, installation paths and temp dir** to be used inside the playbook itself.
 2. creates the basic directories:
-    * the temp folder that holds data whilte installing `/tmp/k8s-install`.
+    * the temp folder that holds data while installing `/tmp/k8s-install`.
     * containerd configuration dir `/etc/containerd`.
     * installation dir for CNI plugins `/opt/cni/bin` (needed by containerd).
     * CNI configuration directory `/etc/cni/net.d`.
@@ -273,7 +273,7 @@ now you can understand how the playbook works:
 1. I will download the initial k8s needed images by a script which first use ctr to pull and then export images to a tar file. I will run this on cp-1 node.<br>
 you can check out these initial images by:
     ```
-    kubeadm config images list --kubernetes-version=v1.36.2
+    $ kubeadm config images list --kubernetes-version=v1.36.2
     ```
 
 2. then use ansible to copy image tar files to all nodes (copy all images incase I want to turn a worker to control plane later; plus these images are light weight).
@@ -289,7 +289,7 @@ you can check out these initial images by:
 > `ctr` tool is available through `containerd-2.3.4-linux-amd64.tar.gz` package bundle I have installed.
 
 > [!Important]
-> as I explained in previous part the diagram file structure [file-structure-diagram.png](https://github.com/Parsa-19/8-Apex/blob/sherkat/diagrams/file-structure-diagram.png) which is the working directory I am going to complete the structure. so take a look at the diagram again and create files like that in your working directory.
+> as I explained in previous part the diagram file structure [file-structure-diagram.png](https://github.com/Parsa-19/8-Apex/blob/sherkat/diagrams/file-structure-diagram.png) is now what I am going to complete the it here. so take a look at the diagram again and create files like that in your working directory.
 > and also in my case the root of my project is in `/root/8-Apex`.
 
 #### first is the script that downloads k8s images
@@ -337,10 +337,13 @@ $ crictl images
 ---
 
 ## init the cluster
-use cilium
+use cilium you need pull images specified for cilium on all nodes
 use kubeadm init config.yml file
-use kubevip
+use kubeadm join control-plane config.yml file
+use kubeadm join worker config.yml file
+use kubevip pull image for kube-vip on all control planes
 
+before init ensure that the kubelet and containerd services are working properly.
 
 important fixes:
 - kubelet service file:
@@ -383,10 +386,10 @@ important fixes:
   ```
   or just use this [kubelet.service](https://github.com/Parsa-19/8-Apex/blob/sherkat/kubernetes/kubelet.service) file and system daemon-reload the system and restart the service.
 
-clean network design:
+the cluster would have this clean network design:
 ```
 Node network:
-192.168.16.0/24
+192.168.55.0/24
 
 Pod network:
 10.244.0.0/16
@@ -395,20 +398,24 @@ Service network:
 10.96.0.0/12
 ```
 
+### kube-vip
+
+first create this kube-vip.yaml manifest file and place it in `/etc/kubernetes/manifests/kube-vip.yaml` (create the directory if it doesnt exists). kubelet then use this manifests in this dir to create static pods and in initializing the cluster. create it by:
+
 get latest kubevip version and use the exact version in your commands:
 ```
-echo "$(curl -sL https://api.github.com/repos/kube-vip/kube-vip/releases | jq -r ".[0].name")"
+$ echo "$(curl -sL https://api.github.com/repos/kube-vip/kube-vip/releases | jq -r ".[0].name")"
 ```
 
 kube-vip v1.2.3 manifest by these commands:
 ```
-export VIP=192.168.16.100
-export INTERFACE=enp0s8
-export KVVERSION=v1.2.3
+$ export VIP=192.168.55.100
+$ export INTERFACE=enp0s8
+$ export KVVERSION=v1.2.3
 
-alias kube-vip="ctr -n k8s.io image pull ghcr.io/kube-vip/kube-vip:$KVVERSION; ctr -n k8s.io run --rm --net-host ghcr.io/kube-vip/kube-vip:$KVVERSION vip /kube-vip"
+$ alias kube-vip="ctr -n k8s.io image pull ghcr.io/kube-vip/kube-vip:$KVVERSION; ctr -n k8s.io run --rm --net-host ghcr.io/kube-vip/kube-vip:$KVVERSION vip /kube-vip"
 
-kube-vip manifest pod \
+$ kube-vip manifest pod \
     --interface $INTERFACE \
     --address $VIP \
     --controlplane \
@@ -416,60 +423,73 @@ kube-vip manifest pod \
     --arp \
     --leaderElection | tee /etc/kubernetes/manifests/kube-vip.yaml  
 ```
-the [kube-vip.yaml file](https://github.com/Parsa-19/8-Apex/blob/sherkat/kubernetes/kube-vip.yaml) I created.
+the above commands will create the kube-vip.yaml file but you need to change it a little bit.<br>
+for example specify the use of `super-admin.conf` instead of `admin.conf` cause the kube-vip needs to access the cluster durring the setup and in newer version of kubeadm you have to do this to work. so use the [kube-vip.yaml file](https://github.com/Parsa-19/8-Apex/blob/sherkat/kubernetes/kube-vip.yaml) I created.
 
-for the offline case in kube-vip also do:
+for the offline case in kube-vip also do these on rest of control planes:
 - export the image to tar file.
-- distribute it through all cluster nodes
-- import the kube-vip image in each node
-- copy the manifest to all the cluster nodes to /etc/kubernetes/manifests/kube-vip.yaml
+- distribute it through all CP nodes
+- import the kube-vip image
+- copy the manifest to /etc/kubernetes/manifests/kube-vip.yaml
 
+### create the cluster, add cp and workers
+prepare [kubeadm-init.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/kubernetes/kubeadm-init.yml) config file and init the cluster.
 
-prepare [kubeadm-init.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/kubernetes/kubeadm-init.yml) config file and init the cluster
+initialize the cluster:
+```
+kubeadm init --config kubeadm-init.conf --upload-certs --v=5
+```
 
 install helm, cilium
 
-join cp-2 and cp-3
-
-join workers
-
-
-You can verify the routing from the node and ensure it pass through enp0s8:
+prepare the kube-vip on other CPs, ensure that kubelet and conatinerd services works fine. in offline case ensure about the k8s and kube-vip images on each cp node. create the [cp-2-join.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/kubernetes/cp-2-join.yml) on cp-2 and [cp-3-join.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/kubernetes/cp-3-join.yml) on cp-3. then join cp-2 and cp-3 by this command:
 ```
-ip route get 192.168.55.119
+cp-2$ kubeadm join --config cp-2-join.yml --v=5
+cp-3$ kubeadm join --config cp-3-join.yml --v=5
 ```
 
-create new fresh cluster cert:
-```
-sudo kubeadm init phase upload-certs --upload-certs --config kubeadm-init.yml --v=5
-``` 
-
-create fresh token:
-```
-kubeadm token create --print-join-command
-```
-
-to join cp use this command:
-```
-kubeadm join --config cp-2-join.yml --v=5
-```
-
-you can check if the specific node can see or reach the VIP or not by:
-```
-ping -c 3 192.168.55.100 
-nc -vz 192.168.55.100 6443
-curl -k https://192.168.55.100:6443/version
-``` 
+to prepare workers before join. ensure the kubelet and containerd services works fine. again for offline case ensure k8s images exists on nodes.
 
 join worker nodes:
 ```
-kubeadm join --config node-1-join.yml --v=5
+worker-1$ kubeadm join --config node-1-join.yml --v=5
+worker-2$ kubeadm join --config node-2-join.yml --v=5
 ```
 
 on control plane get nodes to verify all nodes in cluster:
 ```
-kubectl get nodes -o wide
+$ kubectl get nodes -o wide
 ```
+
+
+### t-shoot and test commands
+reset everything and prepare to init the cluster again:
+```
+kubeadm reset -f
+```
+
+You can verify the routing from the node and ensure it pass through enp0s8:
+```
+$ ip route get 192.168.55.119
+```
+
+create new fresh cluster cert:
+```
+$ sudo kubeadm init phase upload-certs --upload-certs --config kubeadm-init.yml --v=5
+``` 
+
+create fresh token:
+```
+$ kubeadm token create --print-join-command
+```
+
+you can check if the specific node can see or reach the VIP or not by:
+```
+$ ping -c 3 192.168.55.100 
+$ nc -vz 192.168.55.100 6443
+$ curl -k https://192.168.55.100:6443/version
+``` 
+
 
 
 

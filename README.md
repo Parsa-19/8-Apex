@@ -78,46 +78,46 @@ etcd architecture design is **stacked etcd topology** meaning that all etcd memb
                      │                                         │
                      │ • Provides HA Virtual IP for Kubernetes │
                      │   API Server                            │
-                     │ • kube-vip runs on all Control Planes   │
-                     │ • One node is Active/Leader at a time   │
-                     │ • VIP automatically moves if the leader │
-                     │   fails                                 │
-                     │ • No dedicated API load-balancer node   │
-                     │   required                              │
-                     └───────────────────┬─────────────────────┘
-                                         │                          
-                 ┌───────────────────────┼────────────────────────┐
-                 │                       │                        │
-                 ▼                       ▼                        ▼
-        ┌────────────────┐       ┌────────────────┐       ┌────────────────┐
-        │ CP-1           │       │ CP-2           │       │ CP-3           │
-        │ Control Plane  │       │ Control Plane  │       │ Control Plane  │
-        │                │       │                │       │                │
-        │ kube-vip       │       │ kube-vip       │       │ kube-vip       │
-        │ VIP:           │       │ VIP:           │       │ VIP:           │
-        │ 192.168.55.100 │       │ 192.168.55.100 │       │ 192.168.55.100 │
-        │ Active/Leader  │       │ Backup         │       │ Backup         │
-        │                │       │                │       │                │
-        │ API Server     │       │ API Server     │       │ API Server     │
-        │ Scheduler      │       │ Scheduler      │       │ Scheduler      │
-        │ Controller Mgr │       │ Controller Mgr │       │ Controller Mgr │
-        │ etcd Member    │◄─────►│ etcd Member    │◄─────►│ etcd Member    │
-        └───────┬────────┘       └───────┬────────┘       └───────┬────────┘
-                │                        │                        │
-                │                        │                        │
-                └──────────────── etcd Cluster (Raft) ────────────┘
-                                         │
-                                         │
-                              Cluster Control Plane
-                                         │
-         ────────────────────────────────┼────────────────────────────────
-                                         │
-                     ┌───────────────────┴────────────────────┐
-                     │                                        │
-           ┌─────────▼──────────┐                   ┌─────────▼──────────┐
-           │ Worker Node-1      │                   │ Worker Node-2      │
-           │                    │                   │                    │
-           │ kubelet            │                   │ kubelet            │
+    ┌───────────────►│ • kube-vip runs on all Control Planes   │◄──────────────┐
+    │                │ • One node is Active/Leader at a time   │               │
+    │                │ • VIP automatically moves if the leader │               │
+    │                │   fails                                 │               │
+    │                │ • No dedicated API load-balancer node   │               │
+    │                │   required                              │               │
+    │                └───────────────────┬─────────────────────┘               │
+    │                                    │                                     │
+    │            ┌───────────────────────┼────────────────────────┐            │
+    │            │                       │                        │            │ 
+    │            ▼                       ▼                        ▼            │
+    │   ┌────────────────┐       ┌────────────────┐       ┌────────────────┐   │
+    │   │ CP-1           │       │ CP-2           │       │ CP-3           │   │
+    │   │ Control Plane  │       │ Control Plane  │       │ Control Plane  │   │
+    │   │                │       │                │       │                │   │
+    │   │ kube-vip       │       │ kube-vip       │       │ kube-vip       │   │
+    │   │ VIP:           │       │ VIP:           │       │ VIP:           │   │
+    │   │ 192.168.55.100 │       │ 192.168.55.100 │       │ 192.168.55.100 │   │
+    │   │ Active/Leader  │       │ Backup         │       │ Backup         │   │
+    │   │                │       │                │       │                │   │
+    │   │ API Server     │       │ API Server     │       │ API Server     │   │
+    │   │ Scheduler      │       │ Scheduler      │       │ Scheduler      │   │
+    │   │ Controller Mgr │       │ Controller Mgr │       │ Controller Mgr │   │
+    │   │ etcd Member    │◄─────►│ etcd Member    │◄─────►│ etcd Member    │   │
+    │   └───────┬────────┘       └───────┬────────┘       └───────┬────────┘   │
+    │           │                        │                        │            │
+    │           │                        │                        │            │
+    │           └──────────────── etcd Cluster (Raft) ────────────┘            │
+    │                                    │                                     │
+    │                                    │                                     │
+    │                         Cluster Control Plane                            │
+    │                                    │                                     │
+    │    ────────────────────────────────┼────────────────────────────────     │
+    │                                    │                                     │
+    │                ┌───────────────────┴────────────────────┐                │
+    │                │                                        │                │
+    │      ┌─────────▼──────────┐                   ┌─────────▼──────────┐     │
+    │      │ Worker Node-1      │                   │ Worker Node-2      │     │
+    │      │                    │                   │                    │     │
+    └──────┤ kubelet            │                   │ kubelet            ├─────┘
            │ kube-proxy         │                   │ kube-proxy         │
            │ Container Runtime  │                   │ Container Runtime  │
            │                    │                   │                    │
@@ -468,7 +468,7 @@ The project is being implemented incrementally.
 - Configure hostnames
 - Configure static IP addresses
 - Prepare Linux nodes
-- Install containerd
+- turn of swap and add its storage to root by lvm
 - Configure required kernel/network settings
 
 ## Phase 2 — Kubernetes Cluster
@@ -631,9 +631,9 @@ The project is being implemented incrementally. Features listed above represent 
 - [x] Initial architecture design
 - [x] VirtualBox lab design
 - [x] VM/network planning
-- [ ] Kubernetes cluster installation
-- [ ] High-availability control plane
-- [ ] Cilium
+- [x] Kubernetes cluster installation
+- [x] High-availability control plane
+- [x] Cilium
 - [ ] Namespace architecture
 - [ ] Ingress
 - [ ] Persistent storage

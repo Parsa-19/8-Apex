@@ -9,6 +9,19 @@ $ nmcli connection show enp0s3 | grep -i dns
 
 ---
 
+### configure gateway on network interfaces on all nodes
+on frist network interface enp0s3 configure gateway to:
+```
+$ nmcli conn down enp0s3
+$ nmcli conn modify enp0s3 \
+    ipv4.gateway 10.0.2.1 \
+    ipv4.method manual
+$ nmcli conn up enp0s3
+```
+I dont specify the gateway for second interface enp0s8 as I dont need to talk to another network through this interface and its intended to be the node's ip.
+
+---
+
 ### assign each node a name instead of ip in /etc/hosts
 on all nodes:
 ```
