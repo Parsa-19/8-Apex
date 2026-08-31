@@ -579,17 +579,69 @@ crictl ps -a | grep -i kube-vip
 
 ### 6. Install Helm and Cilium
 
-Install Helm on the control-plane node used to manage the cluster.
+Cilium is the CNI I used in the cluster. I also install Helm as my cluster package manager too.
 
-Verify Helm:
+to intall Helm Extract its archive:
+
+```bash
+tar -xzf helm-v3.19.0-linux-amd64.tar.gz
+```
+
+Install the Helm binary:
+
+```bash
+sudo install -m 0755 linux-amd64/helm /usr/local/bin/helm
+```
+
+Verify the installation:
 
 ```bash
 helm version
 ```
 
-For the offline environment, the Helm binary and the Cilium chart must also be prepared beforehand.
+Prepare the Cilium Helm chart for the offline installation.<br>
+Helm also needs the Cilium chart that contains the Kubernetes resources used to deploy Cilium.
 
-Install Cilium using the project's selected Cilium version and configuration.
+add Cilium repository:
+
+```bash
+helm repo add cilium https://helm.cilium.io/
+helm repo update
+```
+
+download the exact chart version:
+
+```bash
+helm pull cilium/cilium --version 1.20.1
+```
+
+The command should produce this cilium chart archive:
+
+```text
+cilium-1.20.1.tgz
+```
+
+here I install directly from the local chart archive.
+
+Install Cilium:
+
+```bash
+helm install cilium cilium-1.20.1.tgz \
+  --namespace kube-system \
+  --set image.pullPolicy=IfNotPresent
+```
+
+Verify the Helm release:
+
+```bash
+helm list -n kube-system
+```
+
+You can inspect the installed values with:
+
+```bash
+helm get values cilium -n kube-system
+```
 
 After installation, verify Cilium:
 
@@ -611,7 +663,13 @@ Then verify cluster connectivity:
 cilium connectivity test
 ```
 
-For an offline installation, make sure every image required by the selected Cilium version is already available locally before deploying Cilium.
+If the Cilium CLI is not installed, the Kubernetes resources can still be checked manually:
+
+```bash
+kubectl -n kube-system get pods -l k8s-app=cilium
+kubectl -n kube-system get daemonset cilium
+kubectl -n kube-system get deployment cilium-operator
+```
 
 ---
 
