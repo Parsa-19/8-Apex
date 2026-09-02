@@ -1,9 +1,8 @@
 ---
-- name: Export Cilium images on CP-1 and import them on a target node
+- name: Export Cilium images on CP-1
   hosts: cp-1
   become: true
   vars:
-    target_node: "node-1"
     image_bundle: "/tmp/cilium-images.tar"
 
     cilium_images:
@@ -21,23 +20,30 @@
       args:
         creates: "{{ image_bundle }}"
 
-    - name: Copy image bundle to target node
-      ansible.builtin.copy:
-        src: "{{ image_bundle }}"
-        dest: "/tmp/cilium-images.tar"
-        mode: "0644"
-      delegate_to: "{{ target_node }}"
+
+- name: Copy and import Cilium images on Kubernetes nodes
+  hosts: k8s_nodes
+  become: true
+  vars:
+    image_bundle: "/tmp/cilium-images.tar"
+
+  tasks:
+    - name: Copy image bundle from CP-1 to this node
+      ansible.builtin.command:
+        cmd: >-
+          scp
+          /tmp/cilium-images.tar
+          {{ ansible_user | default('root') }}@{{ ansible_host | default(inventory_hostname) }}:/tmp/cilium-images.tar
+      delegate_to: cp-1
 
     - name: Import Cilium images into k8s.io namespace
       ansible.builtin.command:
         cmd: /usr/local/bin/ctr -n k8s.io images import /tmp/cilium-images.tar
-      delegate_to: "{{ target_node }}"
 
     - name: Verify Cilium images
       ansible.builtin.command:
         cmd: /usr/local/bin/ctr -n k8s.io images ls
       register: cilium_images_check
-      delegate_to: "{{ target_node }}"
       changed_when: false
 
     - name: Show imported Cilium images

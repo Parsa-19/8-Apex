@@ -413,7 +413,9 @@ Verify the images on a node with:
 ctr -n k8s.io images ls | grep -i cilium
 ```
 
-For the offline setup, export the Cilium images on CP-1, distribute the resulting archive to the required nodes, and import it into the `k8s.io` containerd namespace:
+For the offline setup, export the Cilium images on CP-1, distribute the resulting archive to the required nodes, and import it into the `k8s.io` containerd namespace.
+
+you can do it either manually or by this ansible playbook [export-scp-and-import-cilium-images.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/export-scp-and-import-cilium-images.yml) :
 
 ```bash
 ctr -n k8s.io images export cilium-images.tar <image1> <image2> <image3>
