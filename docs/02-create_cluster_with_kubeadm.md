@@ -399,6 +399,14 @@ quay.io/cilium/operator-generic:v1.20.1
 
 The exact image digests used by the project should be preserved when exporting and importing the images.
 
+pull these images into k8s.io namespace by ctr command:
+
+```
+ctr -n k8s.io images pull quay.io/cilium/cilium:v1.20.1
+ctr -n k8s.io images pull quay.io/cilium/cilium-envoy:v1.37.5-1786810558-766ccfb37260a43e9d228837aa84ce3faf9f64e7
+ctr -n k8s.io images pull quay.io/cilium/operator-generic:v1.20.1
+```
+
 Verify the images on a node with:
 
 ```bash
