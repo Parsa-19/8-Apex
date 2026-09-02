@@ -2,13 +2,14 @@
 - name: Export Cilium images on CP-1
   hosts: cp-1
   become: true
+
   vars:
     image_bundle: "/tmp/cilium-images.tar"
 
     cilium_images:
-      - "quay.io/cilium/cilium@sha256:ae9ea21f7427fe24bc6ea7247eb552157a1b0a431744045d3f641545ca71d11b"
-      - "quay.io/cilium/cilium-envoy@sha256:75b8094c7127736a2ffd2dce3945e0931cb6df21b0372ff661940eca26730b91"
-      - "quay.io/cilium/operator-generic@sha256:6c3885fc7b629099fdbe2a5c87869c86feb825fa18fae299eac0f61918d16ecf"
+      - "quay.io/cilium/cilium-envoy:v1.37.5-1786810558-766ccfb37260a43e9d228837aa84ce3faf9f64e7"
+      - "quay.io/cilium/cilium:v1.20.1"
+      - "quay.io/cilium/operator-generic:v1.20.1"
 
   tasks:
     - name: Export Cilium images into a single tar
@@ -21,9 +22,10 @@
         creates: "{{ image_bundle }}"
 
 
-- name: Copy and import Cilium images on Kubernetes nodes
+- name: Copy and import Cilium images on k8s nodes
   hosts: k8s_nodes
   become: true
+
   vars:
     image_bundle: "/tmp/cilium-images.tar"
 
