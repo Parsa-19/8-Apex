@@ -661,7 +661,13 @@ kubectl -n kube-system get pods -o wide
 
 Cilium should have an agent Pod on every existing node.
 
-If the Cilium CLI is available:
+install Cilium CLI on all control plane by this ansible file [install-cilium-cli.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/ansible/install-cilium-cli.yml):
+
+```
+ansible-playbook install-cilium-cli.yml -i inventory.ini
+```
+
+check cilium status by cilium cli:
 
 ```bash
 cilium status --wait
@@ -869,9 +875,9 @@ Workers do not need `/etc/kubernetes/manifests/kube-vip.yaml`.
 
 Prepare the worker join configuration files:
 
-[node-1-join.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/kubernetes/node-1-join.yml)
+[node-1-join.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/kubernetes/worker-1-join.yml)
 
-[node-2-join.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/kubernetes/node-2-join.yml)
+[node-2-join.yml](https://github.com/Parsa-19/8-Apex/blob/sherkat/kubernetes/worker-2-join.yml)
 
 Join each worker:
 
@@ -995,6 +1001,13 @@ To create a fresh bootstrap token and display a worker join command:
 
 ```bash
 kubeadm token create --print-join-command
+```
+
+see logs specific for container t-shoot like kube-vip, etcd, apiserver and ...:
+
+```
+crictl -n k8s.io image ls
+ctl logs <CONTAINER_ID>
 ```
 
 These commands are useful when rebuilding or troubleshooting the cluster, but they should not normally be required during a healthy cluster's day-to-day operation.
