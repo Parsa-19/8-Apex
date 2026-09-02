@@ -816,6 +816,9 @@ kubectl -n kube-system get pods -l component=etcd -o wide
 
 There should be one etcd member on each control-plane node.
 
+> [!WARNING]
+>if you see kube-vip-cp-2/3 is in CrashLoopBackOff or something for example in my case it was having problem with the super-admin.conf file in /etc/kubernetes. so make sure the `super-admin.conf` is exists in `/etc/kubernetes` on each control-plane.
+
 ---
 
 ### 10. Verify the HA control plane
